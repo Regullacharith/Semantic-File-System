@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:fragment="page(content)"
+      lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'SFS — ' + ${page.title}">SFS</title>
+    <link rel="stylesheet" th:href="@{/css/sfs.css}">
+</head>
+
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<header class="app-header">
+    <div class="app-header__brand">
+        <span class="app-header__title">Semantic File System</span>
+        <span class="app-header__version">V1 · V0.1 baseline</span>
+    </div>
+    <div class="app-header__scope">Text files only</div>
+</header>
+
+<nav class="app-nav" aria-label="Primary">
+    <ul class="app-nav__list">
+        <!--/* Available destinations render as links. */-->
+        <li class="app-nav__item" th:each="item : ${page.navigation}">
+
+            <a th:if="${item.available}"
+               th:href="@{${item.path}}"
+               th:text="${item.label}"
+               th:title="${item.description}"
+               th:classappend="${page.isActive(item)} ? 'app-nav__link--active' : ''"
+               th:attr="aria-current=${page.isActive(item)} ? 'page' : null"
+               class="app-nav__link">Item</a>
+
+            <span th:unless="${item.available}"
+                  th:title="${item.description} + ' — not yet implemented'"
+                  class="app-nav__link app-nav__link--planned"
+                  aria-disabled="true">
+                <span th:text="${item.label}">Item</span>
+                <span class="app-nav__badge">planned</span>
+            </span>
+
+        </li>
+    </ul>
+</nav>
+
+<main class="app-main" id="main-content">
+    <!--/* Each page injects its content here. */-->
+    <th:block th:replace="${content}">
+        <p>Page content.</p>
+    </th:block>
+</main>
+
+<footer class="app-footer">
+    <p class="app-footer__note">
+        SFS reconstruction is <strong>semantic and approximate</strong>. It is not
+        byte-for-byte recovery. Fidelity is reported as measured semantic, structural and
+        factual quality.
+    </p>
+    <p class="app-footer__copyright">© 2026 Regullacharith · All rights reserved</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #home-content})}"
+      lang="en">
+
+<head>
+    <title>Dashboard</title>
+</head>
+
+<body>
+
+<div id="home-content">
+
+    <h1 class="page-title">Dashboard</h1>
+
+    <p class="page-lead">
+        The Semantic File System stores what a file <em>means</em>, not only what it
+        contains, so a record can be searched and reconstructed after the original bytes
+        are deleted.
+    </p>
+
+    <section class="panel panel--notice" aria-labelledby="status-heading">
+        <h2 class="panel__heading" id="status-heading">Development status</h2>
+        <p>
+            The user interface shell is in place. Semantic capabilities are not
+            implemented yet, so no file can currently be imported, analyzed, searched or
+            reconstructed.
+        </p>
+        <p>
+            Screens marked <span class="inline-badge">planned</span> in the navigation
+            have no route yet and are intentionally not clickable.
+        </p>
+    </section>
+
+    <section aria-labelledby="planned-heading">
+        <h2 class="section-heading" id="planned-heading">Planned screens</h2>
+        <ul class="card-list">
+            <li class="card" th:each="item : ${page.navigation}" th:unless="${item.available}">
+                <span class="card__title" th:text="${item.label}">Screen</span>
+                <span class="card__description" th:text="${item.description}">Description</span>
+            </li>
+        </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="pipeline-heading">
+        <h2 class="panel__heading" id="pipeline-heading">Intended pipeline</h2>
+        <pre class="pipeline">text file
+   -&gt; Text Adapter
+   -&gt; Semantic Engine
+   -&gt; Semantic DNA
+   -&gt; Memory Database + Vector Index
+   -&gt; Semantic Search
+   -&gt; Reconstruction Rules + Reconstruction Model
+   -&gt; reconstructed text file
+   -&gt; Fidelity Report</pre>
+    </section>
+
+</div>
+
+</body>
+</html>
