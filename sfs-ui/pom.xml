@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfs</groupId>
+        <artifactId>sfs-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sfs-ui</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SFS UI</name>
+    <description>
+        Lightweight server-rendered web UI. View models, controllers, templates and
+        mock service implementations. Contains NO semantic, persistence, reconstruction,
+        evaluation or security logic.
+    </description>
+
+    <!--
+        ARCHITECTURAL RULE FOR THIS MODULE:
+
+        sfs-ui may depend on sfs-contracts (interfaces) and, transitively, sfs-core
+        (domain types used inside those interfaces).
+
+        sfs-ui must NEVER depend on a memory/persistence/engine module. The M01
+        specification states: "The UI must never directly manipulate the Memory
+        Database." Because those modules do not exist yet, that rule is currently
+        enforced by absence; when they are created, it becomes a review checkpoint.
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-contracts</artifactId>
+        </dependency>
+
+        <!--
+            Justification per the "every dependency must have a reason" rule:
+
+            spring-boot-starter-web       - embedded server + MVC controllers (D-001)
+            spring-boot-starter-thymeleaf - server-rendered HTML templates (D-001)
+            spring-boot-starter-test      - MockMvc slice tests for controllers
+
+            NOT included, and requiring authorization to add:
+            Spring Data, Spring Security, Actuator, WebFlux, any DB driver.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Produces the runnable fat jar and enables `mvn spring-boot:run`.
+                Only this module is executable; sfs-core and sfs-contracts are libraries.
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.sfs.ui.SfsUiApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

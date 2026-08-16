@@ -1,0 +1,56 @@
+SFS — LICENSE
+
+Copyright (c) 2026 Regullacharith
+
+All rights reserved.
+
+The Semantic File System (SFS), including its source code, documentation,
+architecture, design materials, original research materials, and other
+original project materials, is the property of the copyright holder
+identified above, subject to any applicable rights belonging to third
+parties.
+
+No permission is granted to any person or organization to:
+
+- copy, reproduce, or redistribute the SFS project or substantial portions
+  of it;
+- modify, adapt, translate, or create derivative works from the project;
+- publish, distribute, sublicense, sell, or otherwise commercially exploit
+  the project;
+- incorporate the project or substantial portions of it into another
+  software product or service;
+
+without prior written permission from the copyright holder.
+
+The copyright holder retains all rights not expressly granted by this
+notice.
+
+THIRD-PARTY COMPONENTS
+
+SFS may use third-party libraries, frameworks, tools, models, datasets,
+or other components. Such components are NOT covered by this copyright
+notice where their respective licenses provide otherwise.
+
+Each third-party component remains subject to its own applicable license
+and copyright terms. The SFS project must not be interpreted as relicensing
+third-party material under this notice.
+
+CONTRIBUTIONS
+
+Unless a separate written agreement states otherwise, contributions
+submitted to the SFS project must not be assumed to transfer copyright
+ownership to another party. Any contribution incorporated into the project
+is subject to applicable copyright law and any agreement governing that
+contribution.
+
+NO WARRANTY
+
+The SFS project is provided "as is", without warranty of any kind, express
+or implied, including but not limited to warranties of merchantability,
+fitness for a particular purpose, and non-infringement, to the extent
+permitted by applicable law.
+
+In no event shall the copyright holder be liable for any claim, damages,
+or other liability arising from or in connection with the project or its
+use, to the extent permitted by applicable law.
+

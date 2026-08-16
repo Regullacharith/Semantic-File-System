@@ -1,0 +1,72 @@
+# ---- Maven ----
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ---- Java ----
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ---- IntelliJ IDEA ----
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ---- VS Code ----
+# .vscode/ is intentionally NOT ignored wholesale: shared launch/settings files are
+# useful. Ignore only machine-specific entries.
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.classpath
+.project
+.settings/
+bin/
+
+# ---- Eclipse ----
+.apt_generated/
+.factorypath
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- SFS runtime artifacts ----
+# Reconstructed files, benchmark outputs and local working data must never be
+# committed. Real paths are defined by their owning milestone; these are reserved now
+# so generated artifacts cannot be committed by accident later.
+/data/
+/workspace/
+/reconstructed/
+/benchmark-results/
+*.sfsdb
+
+# ---- Security ----
+# Nothing containing a secret may ever enter version control.
+*.key
+*.pem
+*.p12
+*.jks
+secrets.properties
+application-local.properties
+.env

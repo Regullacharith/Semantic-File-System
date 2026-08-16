@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfs</groupId>
+        <artifactId>sfs-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sfs-contracts</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SFS Contracts</name>
+    <description>
+        Service interfaces and request/response models shared between the UI and the
+        backend subsystems. Milestone 02 owns the contents of this module; Milestone 01
+        introduces only the minimum contracts its seven views require.
+    </description>
+
+    <!--
+        ARCHITECTURAL RULE FOR THIS MODULE:
+
+        Interfaces and data carriers only. No implementations, no framework,
+        no persistence, no HTTP annotations.
+
+        This is the seam that lets Milestone 01 proceed against mock services while
+        the real services are built in later milestones, exactly as the M01
+        specification permits ("API contracts; can begin with mocks").
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-core</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

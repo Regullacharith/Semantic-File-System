@@ -1,0 +1,3 @@
+Thymeleaf template root. Views are added from Task 01.1 onwards.
+This placeholder keeps the directory in version control so Spring Boot does not warn
+about a missing template location on startup.
