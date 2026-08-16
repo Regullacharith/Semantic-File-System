@@ -20,21 +20,9 @@
         Milestones 03 and 06 own the contents of this module.
     </description>
 
-    <!--
-        ARCHITECTURAL RULE FOR THIS MODULE:
-
-        sfs-core has NO production dependencies. Not Spring, not Jackson, not a logger.
-
-        Reason: the domain model is the one thing every other subsystem depends on.
-        If it acquires a framework dependency, that framework leaks into the adapter
-        framework, the memory system, the reconstruction model and the evaluation
-        system. Keeping it dependency-free is what makes the components replaceable,
-        which the specification requires.
-
-        Adding ANY production dependency here requires project owner authorization.
-    -->
+   
     <dependencies>
-        <!-- Test-scope only, inherited from the parent. Intentionally empty otherwise. -->
     </dependencies>
 
 </project>
+

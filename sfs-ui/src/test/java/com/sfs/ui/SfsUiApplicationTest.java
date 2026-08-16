@@ -8,15 +8,6 @@ import org.springframework.context.ApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Verifies that the UI application context starts.
- *
- * <p>This is a real behavioural test, not a coverage filler: a Spring context failure is
- * the single most common outcome of a misconfigured multi-module build, and it must be
- * caught by the build rather than by the project owner starting the app manually.
- *
- * <p>The test uses a random port so it can never collide with a running instance on 8080.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("SFS UI application")
 class SfsUiApplicationTest {

@@ -12,32 +12,9 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Enforces the Milestone 01 architectural boundary as an executable rule.
- *
- * <p>The specification states plainly: <em>"The UI must never directly manipulate the Memory
- * Database"</em> and <em>"No semantic logic is implemented in UI"</em>. Those are review
- * instructions in the PDF; this test turns them into a build failure so a violation cannot
- * survive to the commit stage unnoticed.
- *
- * <p>The check is deliberately simple and dependency-free: it scans the UI module's own
- * source files for imports of backend packages. It is a guard rail, not a formal
- * architecture verification tool. Milestone 14 may replace it with ArchUnit, which would be
- * a justified new test dependency at that point.
- *
- * <p><strong>Why there is a self-test.</strong> A rule that cannot fail is not a rule. The
- * backend packages listed below do not exist yet, so the production scan currently passes
- * trivially. {@link #detectorFlagsAForbiddenImport()} feeds the detector a known-bad source
- * file and asserts that it is flagged, proving the detector actually works before there is
- * any real code for it to guard.
- */
 @DisplayName("UI architectural boundary")
 class ArchitectureBoundaryTest {
 
-    /**
-     * Packages the UI layer is forbidden to import directly.
-     * The UI must reach these subsystems only through {@code com.sfs.contracts} interfaces.
-     */
     private static final List<String> FORBIDDEN_IMPORTS = List.of(
             "com.sfs.memory",          // Memory Database       - M08
             "com.sfs.engine",          // Semantic Engine       - M04
