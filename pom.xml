@@ -13,18 +13,6 @@
     <name>SFS Parent</name>
     <description>Semantic File System (SFS) V1 - reactor / dependency management</description>
 
-    <!--
-        MODULE ORDER IS ARCHITECTURAL, NOT ALPHABETICAL.
-        Dependency direction is strictly one-way:
-
-            sfs-ui  ->  sfs-contracts  ->  sfs-core
-
-        sfs-core must never depend on anything above it.
-        sfs-ui must never depend on a persistence/engine module (none exist yet).
-
-        Modules for M04-M14 are NOT declared here. They are added by their own
-        milestone. No empty placeholder modules.
-    -->
     <modules>
         <module>sfs-core</module>
         <module>sfs-contracts</module>
@@ -37,10 +25,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- Frozen by decision D-005. Spring Boot 3.5 reached OSS EOL 2026-06-30. -->
         <spring.boot.version>4.1.0</spring.boot.version>
 
-        <!-- Test stack. JUnit 5 + AssertJ. No mocking framework yet: not needed in 01.0. -->
+        <!-- Test stack. JUnit 5 + Assert. -->
         <junit.jupiter.version>5.11.4</junit.jupiter.version>
         <assertj.version>3.27.3</assertj.version>
 
@@ -52,10 +39,6 @@
         <dependencies>
             <!--
                 Imported as a BOM rather than used as a parent POM.
-                Reason: this reactor already has its own parent (sfs-parent), and a
-                multi-module project should not inherit from spring-boot-starter-parent
-                because that would force Spring Boot conventions onto sfs-core, which
-                is a plain-Java module that must stay framework-free.
             -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -79,7 +62,8 @@
                 <version>${assertj.version}</version>
             </dependency>
 
-            <!-- Internal module versions, so child modules never hard-code a version. -->
+<!-- Internal module versions, so child modules never hard-code a version. -->
+
             <dependency>
                 <groupId>com.sfs</groupId>
                 <artifactId>sfs-core</artifactId>
@@ -94,7 +78,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Test dependencies every module gets. Nothing else is global. -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -135,6 +118,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <useSystemClassLoader>false</useSystemClassLoader>
+                </configuration>
             </plugin>
         </plugins>
     </build>

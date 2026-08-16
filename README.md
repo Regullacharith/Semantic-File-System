@@ -214,10 +214,13 @@ live file → register → background analysis → Semantic DNA + Rules + securi
 | | |
 |---|---|
 | **Current milestone** | M01 — User / Interface Layer |
+| **Last completed task** | 01.1 — UI shell and navigation |
+| **Next task** | 01.2 — File import/analyze/delete controls |
+| **Automated tests** | 33 passing |
 
-**What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0 UI application bootstrap, explicit module boundaries, package documentation, configuration, and executable UI architecture/application-context tests. The application intentionally serves no user routes yet.
+**What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0 application bootstrap, explicit module boundaries enforced by an executable architecture test,and the lightweight UI shell — base layout, primary navigation covering all seven Milestone 01 destinations, and a dashboard route.The dashboard is the only implemented screen; the other six destinations render as visibly disabled items rather than links, so no navigation action produces a silent 404.
 
-**What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database, Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. These arrive in their designated milestones.
+**What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database,Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. No file can currently be imported, analyzed, searched or reconstructed. These arrive in their designated milestones.
 
 Verification status is tracked deliberately — *implemented*, *compiled*, *unit-tested*, *integration-tested*, *experimentally evaluated*, and *accepted* are distinct states and are never conflated. No fidelity percentage is treated as a fact unless a reproducible measurement produces it.
 
@@ -227,9 +230,21 @@ Verification status is tracked deliberately — *implemented*, *compiled*, *unit
 ```
 M01 — User / Interface Layer
  │
- ├
+ ├── 01.0  Project skeleton, Maven reactor, module boundaries   ✅ complete
+ ├── 01.1  UI shell and navigation                              ✅ complete
+ ├── 01.2  File import / analyze / delete controls              ◀ next
+ ├── 01.3  Semantic Search view
+ ├── 01.4  Object / Semantic DNA view
+ ├── 01.5  Single-click reconstruction flow
+ ├── 01.6  Evaluation / fidelity view
+ ├── 01.7  Security / policy settings
+ └── 01.8  Milestone integration tests + acceptance report
 
-The important distinction is: **M01 is the milestone;.** The remaining SFS architecture is planned, documented, and intentionally not implemented yet.
+Every M01 view is built against **mock services**. Real backend services arrive from M02
+onward, exactly as the milestone specification permits: *"API contracts; can begin with mocks."*
+
+The important distinction is that M01 is the milestone currently being implemented. The
+remaining SFS architecture is planned and documented, but intentionally not implemented yet.
 
 ### Development workflow
 
@@ -287,7 +302,8 @@ mvn -pl sfs-ui spring-boot:run
 
 Then open <http://localhost:8080>.
 
-> currently  the application intentionally serves **no routes**, so `/` returns HTTP 404.
+> The dashboard is the only implemented route. The other six navigation destinations are
+> deliberately not clickable until their task lands, so no link produces a 404.
 
 Run on a different port without editing any file:
 
@@ -321,10 +337,12 @@ sfs/
 │
 └── sfs-ui/                 # server-rendered web UI
     ├── src/main/java/com/sfs/ui/
+    │   ├── controller/     # request handling only, no domain logic
+    │   └── view/           # immutable presentation view models
     ├── src/main/resources/
     │   ├── application.properties
-    │   ├── templates/      # Thymeleaf views
-    │   └── static/         # CSS, minimal vanilla JS
+    │   ├── templates/      # Thymeleaf views (layout.html + one per screen)
+    │   └── static/css/     # local stylesheet, no CDN
     └── src/test/java/com/sfs/ui/
 ```
 
@@ -408,10 +426,14 @@ Confidence is never reported as accuracy without calibration.
 
 **Current:**
 
-- No routes are served; the application starts and does nothing else.
+- Only the dashboard route exists. Six of the seven navigation destinations are inert.
+- The UI calls no services. Screens are rendered from static data; mock services begin in Task 01.2.
 - `sfs-core` and `sfs-contracts` contain package documentation only.
-- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced .
-- Verified on windows 10  with JDK 21.0.11 only.
+- Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, `aria-current`, `aria-disabled`) and has not been screen-reader audited.
+- `spring-boot-starter-web` is deprecated in Spring Boot 4 in favour of `spring-boot-starter-webmvc`; the rename is pending a dedicated task.
+- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit in M14.
+- Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
+
 
 ---
 
@@ -430,5 +452,8 @@ express written permission from the copyright holder.
 
 Third-party dependencies and components remain subject to
 their respective licenses.
+
+See [`LICENSE`](LICENSE) for the complete and authoritative terms. Where this summary and
+the `LICENSE` file differ, the `LICENSE` file governs.
 ---
 
