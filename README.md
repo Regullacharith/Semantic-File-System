@@ -214,7 +214,7 @@ live file → register → background analysis → Semantic DNA + Rules + securi
 | | |
 |---|---|
 | **Current milestone** | M01 — User / Interface Layer |
-| **Completed task**	 |File import/analyze/delete controls|
+| **Completed task**	 |Semantic Search view |
 | **Automated tests** | |
 
 What exists today: a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
@@ -247,13 +247,13 @@ M01 — User / Interface Layer
  ├── 01.0  Project skeleton, Maven reactor, module boundaries   ✅ complete
  ├── 01.1  UI shell and navigation                              ✅ complete
  ├── 01.2  File import / analyze / delete controls              ✅ complete
- ├── 01.3  Semantic Search view                                 ◀ next
- ├── 01.4  Object / Semantic DNA view
+ ├── 01.3  Semantic Search view                                 ✅ complete
+ ├── 01.4  Object / Semantic DNA view                           ◀ next
  ├── 01.5  Single-click reconstruction flow
  ├── 01.6  Evaluation / fidelity view
  ├── 01.7  Security / policy settings
  └── 01.8  Milestone integration tests + acceptance report
-
+```
 Every M01 view is built against **mock services**. Real backend services arrive from M02
 onward, exactly as the milestone specification permits: *"API contracts; can begin with mocks."*
 
@@ -281,7 +281,7 @@ commits
    ↓
 Next phase
 
-
+```
 ## Prerequisites
 
 | Tool | Version | Notes |
@@ -316,11 +316,12 @@ mvn -pl sfs-ui spring-boot:run
 
 Then open <http://localhost:8080>.
 
-> The dashboard is the only implemented route. The other six navigation destinations are
-> deliberately not clickable until their task lands, so no link produces a 404.
-> The application starts with the mock profile active, which supplies in-memory stand-ins
+"The dashboard, Files and Search screens are implemented. The other four navigation destinations are
+deliberately not clickable until their task lands, so no link produces a 404.
+
+The application starts with the mock profile active, which supplies in-memory stand-ins
 for backend services that do not exist yet. Override with SFS_PROFILE when real services
-arrive.
+arrive."
 
 Run on a different port :
 
@@ -351,7 +352,8 @@ sfs/
 │
 ├── sfs-contracts/          # service interfaces + request/response models
 │   └── src/main/java/com/sfs/contracts/
-│       └── file/           # FileService, FileSummary, FileStatus, requests, results
+│       ├── file/           # FileService, FileSummary, FileStatus, requests, results
+│       └── search/         # SearchService, SearchQuery, SearchResult, evidence
 │
 └── sfs-ui/                 # server-rendered web UI
     ├── src/main/java/com/sfs/ui/
@@ -446,10 +448,12 @@ Only the dashboard route exists. Six of the seven navigation destinations are in
 The Files screen is backed by an in-memory mock, not the File Lifecycle Manager. Imported files are not persisted, are not analyzed, and are lost on restart.
 Deleting raw data is a single click with no confirmation step. Acceptable while the data is mock; it needs an interstitial before any real implementation.
 The file list is not paginated.
+Search is keyword overlap against a fixed four-document corpus, not semantic retrieval. Relevance scores are illustrative and carry no measured meaning.
+Search results are not paginated and cannot be filtered by status or date.
 sfs-core and sfs-contracts contain package only.
 Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, aria-current, aria-disabled) and has not been screen-reader audited.
 spring-boot-starter-web is deprecated in Spring Boot 4 in favour of spring-boot-starter-webmvc; the rename is pending a dedicated task.
-The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit .
+The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit.
 Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
 
 ---

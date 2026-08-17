@@ -20,13 +20,16 @@ class NavigationItemTest {
     }
 
     @Test
-    @DisplayName("marks the dashboard and files screens as implemented")
+    @DisplayName("marks the dashboard, files and search screens as implemented")
     void implementedDestinationsAreAvailable() {
         // Updated as each task lands a screen. Asserting the exact set, rather than a
         // count, means enabling a destination prematurely fails the build.
         assertThat(NavigationItem.all())
                 .filteredOn(NavigationItem::isAvailable)
-                .containsExactly(NavigationItem.HOME, NavigationItem.FILES);
+                .containsExactly(
+                        NavigationItem.HOME,
+                        NavigationItem.FILES,
+                        NavigationItem.SEARCH);
     }
 
     @Test
@@ -34,7 +37,6 @@ class NavigationItemTest {
     void unimplementedDestinationsArePlanned() {
         assertThat(NavigationItem.planned())
                 .containsExactly(
-                        NavigationItem.SEARCH,
                         NavigationItem.OBJECTS,
                         NavigationItem.RECONSTRUCTION,
                         NavigationItem.EVALUATION,

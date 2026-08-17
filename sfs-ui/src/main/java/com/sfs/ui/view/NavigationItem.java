@@ -8,25 +8,25 @@ import java.util.List;
  */
 public enum NavigationItem {
 
-    /** Dashboard / landing view. */
+    /** Dashboard / landing view.  */
     HOME("Dashboard", "/", "Overview of the Semantic File System", true),
 
     /** File import, analyze and delete controls. */
     FILES("Files", "/files", "Import, analyze and delete files", true),
 
     /** Semantic Search view.  */
-    SEARCH("Search", "/search", "Find semantic records by meaning", false),
+    SEARCH("Search", "/search", "Find semantic records by meaning", true),
 
-    /** Object / Semantic DNA inspection view.  */
+    /** Object / Semantic DNA inspection view. */
     OBJECTS("Objects", "/objects", "Inspect Object IDs and Semantic DNA", false),
 
     /** Single-click reconstruction flow.  */
     RECONSTRUCTION("Reconstruction", "/reconstruction", "Reconstruct artifacts from semantic memory", false),
 
-    /** Evaluation / fidelity view. */
+    /** Evaluation / fidelity view.  */
     EVALUATION("Evaluation", "/evaluation", "Semantic, structural and factual fidelity reports", false),
 
-    /** Security and policy settings.*/
+    /** Security and policy settings.  */
     SETTINGS("Settings", "/settings", "Security and privacy policy configuration", false);
 
     private final String label;
@@ -53,9 +53,7 @@ public enum NavigationItem {
         return description;
     }
 
-    /**
-     * Whether the destination has an implemented route.
-     */
+    
     public boolean isAvailable() {
         return available;
     }
@@ -67,13 +65,10 @@ public enum NavigationItem {
         return List.of(values());
     }
 
-    /**
-     * Destinations that are not yet implemented.
-     */
+ 
     public static List<NavigationItem> planned() {
         return Arrays.stream(values())
                 .filter(item -> !item.available)
                 .toList();
     }
 }
-

@@ -435,3 +435,111 @@ a.app-nav__link:focus {
     clip: rect(0 0 0 0);
     white-space: nowrap;
 }
+
+/* -------------------------------------------------------------- search */
+
+.search-form {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.search-form__input {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--colour-text);
+    background: var(--colour-surface);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+}
+
+.search-form__input:focus {
+    outline: 2px solid var(--colour-accent);
+    outline-offset: 1px;
+}
+
+.search-meta {
+    margin: 0 0 var(--space-md);
+    font-size: 0.82rem;
+    color: var(--colour-text-muted);
+}
+
+/* ------------------------------------------------------- result list */
+
+.result-list {
+    margin: 0 0 var(--space-lg);
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.result {
+    padding: var(--space-md);
+    background: var(--colour-surface);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+}
+
+/* Memorized records are visually distinct from live files. */
+.result--memorized {
+    border-left: 3px solid var(--colour-accent);
+    background: #fbfbfc;
+}
+
+.result__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.result__name {
+    font-weight: 600;
+}
+
+.result__relevance {
+    margin-left: auto;
+    font-size: 0.78rem;
+    color: var(--colour-text-muted);
+}
+
+.result__summary {
+    margin: var(--space-sm) 0;
+    font-size: 0.9rem;
+}
+
+/* ---------------------------------------------------------- evidence */
+
+.evidence {
+    margin-top: var(--space-sm);
+    font-size: 0.85rem;
+}
+
+.evidence__toggle {
+    cursor: pointer;
+    color: var(--colour-accent);
+    padding: var(--space-xs) 0;
+}
+
+.evidence__list {
+    margin: var(--space-sm) 0 0;
+    padding-left: var(--space-lg);
+}
+
+.evidence__item {
+    margin-bottom: var(--space-xs);
+}
+
+.evidence__type {
+    display: inline-block;
+    min-width: 8rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--colour-text-muted);
+}

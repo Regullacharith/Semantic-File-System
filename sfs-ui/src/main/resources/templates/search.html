@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!--/*
+    Semantic search view.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #search-content})}"
+      lang="en">
+
+<head>
+    <title>Search</title>
+</head>
+
+<body>
+
+<div id="search-content">
+
+    <h1 class="page-title">Semantic Search</h1>
+
+    <p class="page-lead">
+        Find records by meaning rather than by file name. Memorized records remain findable
+        after their raw bytes have been deleted. Entering an exact Object ID resolves it
+        directly, bypassing similarity search.
+    </p>
+
+    <form th:action="@{/search}" method="get" class="search-form" role="search">
+        <label class="visually-hidden" for="q">Search query</label>
+        <input type="search" id="q" name="q"
+               th:value="${query}"
+               placeholder="e.g. database performance, or an Object ID"
+               maxlength="500"
+               class="search-form__input"
+               autocomplete="off">
+        <button type="submit" class="button button--primary">Search</button>
+    </form>
+
+    <div th:if="${error}" class="alert alert--failure" role="alert">
+        <span th:text="${error}">Error</span>
+    </div>
+
+    <p th:if="${searched and error == null}" class="search-meta">
+        <span th:text="${#lists.size(results)}">0</span>
+        <span th:text="${#lists.size(results) == 1 ? 'result' : 'results'}">results</span>
+        ·
+        <span th:text="${retrievalMode}">mode</span>
+        ·
+        <span th:text="${tookMillis} + ' ms'">0 ms</span>
+    </p>
+
+    <p th:if="${searched and error == null and #lists.isEmpty(results)}" class="empty-state">
+        No semantic records matched that query.
+    </p>
+
+    <ol th:unless="${#lists.isEmpty(results)}" class="result-list">
+        <li th:each="result : ${results}"
+            th:classappend="${result.memorized} ? 'result--memorized' : ''"
+            class="result">
+
+            <div class="result__header">
+                <span class="result__name" th:text="${result.displayName}">name.txt</span>
+
+                <span class="status-badge"
+                      th:classappend="'status-badge--' + ${#strings.toLowerCase(result.statusLabel)}"
+                      th:text="${result.statusLabel}">Status</span>
+
+                <span class="result__relevance"
+                      th:text="${result.relevancePercent} + '% match'">0% match</span>
+            </div>
+
+            <code class="object-id" th:text="${result.objectId}">id</code>
+
+            <p class="result__summary" th:text="${result.summary}">Summary</p>
+
+    
+            <details class="evidence">
+                <summary class="evidence__toggle">
+                    Why this matched
+                    (<span th:text="${#lists.size(result.evidence)}">0</span>)
+                </summary>
+                <ul class="evidence__list">
+                    <li th:each="item : ${result.evidence}" class="evidence__item">
+                        <span class="evidence__type" th:text="${item.typeLabel}">Type</span>
+                        <span th:text="${item.detail}">Detail</span>
+                    </li>
+                </ul>
+            </details>
+
+            <p th:if="${result.memorized}" class="hint hint--inline">
+                Raw file deleted. This record survives as semantic memory and can be
+                reconstructed from the Reconstruction screen.
+            </p>
+        </li>
+    </ol>
+
+    <section class="panel panel--notice" aria-labelledby="search-note-heading">
+        <h2 class="panel__heading" id="search-note-heading">About these results</h2>
+        <p>
+            Search returns Object IDs and the evidence behind each match. It never
+            reconstructs a file: reconstruction is a separate action you start explicitly.
+        </p>
+        <p>
+            This build uses a mock search service. Matching is keyword overlap against a fixed
+            sample corpus — there are no embeddings, no vector index and no reranking. Real
+            semantic retrieval arrives with the Memory System and Search Engine milestones.
+        </p>
+    </section>
+
+</div>
+
+</body>
+</html>
