@@ -214,16 +214,30 @@ live file → register → background analysis → Semantic DNA + Rules + securi
 | | |
 |---|---|
 | **Current milestone** | M01 — User / Interface Layer |
-| **Last completed task** | 01.1 — UI shell and navigation |
-| **Next task** | 01.2 — File import/analyze/delete controls |
-| **Automated tests** | 33 passing |
+| **Completed task**	 |File import/analyze/delete controls|
+| **Automated tests** | |
 
-**What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0 application bootstrap, explicit module boundaries enforced by an executable architecture test,and the lightweight UI shell — base layout, primary navigation covering all seven Milestone 01 destinations, and a dashboard route.The dashboard is the only implemented screen; the other six destinations render as visibly disabled items rather than links, so no navigation action produces a silent 404.
+What exists today: a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
+application bootstrap, explicit module boundaries enforced by an executable architecture test,
+the lightweight UI shell — base layout and primary navigation covering all seven Milestone 01
+destinations — plus two working screens: the dashboard and the Files screen. The remaining
+five destinations render as visibly disabled items rather than links, so no navigation action
+produces a silent 404.
 
-**What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database,Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. No file can currently be imported, analyzed, searched or reconstructed. These arrive in their designated milestones.
+The Files screen imports a UTF-8 text file, assigns an Object ID, requests analysis and
+performs semantic deletion. It is backed by MockFileService, an in-memory stand-in — not
+the real File Lifecycle Manager. The mock deliberately enforces the lifecycle rules rather
+than merely storing data: semantic deletion is refused unless a file has been analyzed,
+mirroring the constraint that raw bytes may never be removed before a validated Semantic
+Record is durably committed. Its state resets when the application restarts.
 
-Verification status is tracked deliberately — *implemented*, *compiled*, *unit-tested*, *integration-tested*, *experimentally evaluated*, and *accepted* are distinct states and are never conflated. No fidelity percentage is treated as a fact unless a reproducible measurement produces it.
+What does not exist yet: Text Adapter, Semantic Engine, Semantic DNA, Memory Database,
+Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction
+Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. No semantic
+analysis is performed and no Semantic DNA is produced — importing a file registers a name
+and a size, nothing more. Nothing is persisted. These arrive in their designated milestones.
 
+Verification status is tracked deliberately — implemented, compiled, unit-tested, integration-tested, experimentally evaluated, and accepted are distinct states and are never conflated. No fidelity percentage is treated as a fact unless a reproducible measurement produces it.
 ---
 ### M01 sequence
 
@@ -232,8 +246,8 @@ M01 — User / Interface Layer
  │
  ├── 01.0  Project skeleton, Maven reactor, module boundaries   ✅ complete
  ├── 01.1  UI shell and navigation                              ✅ complete
- ├── 01.2  File import / analyze / delete controls              ◀ next
- ├── 01.3  Semantic Search view
+ ├── 01.2  File import / analyze / delete controls              ✅ complete
+ ├── 01.3  Semantic Search view                                 ◀ next
  ├── 01.4  Object / Semantic DNA view
  ├── 01.5  Single-click reconstruction flow
  ├── 01.6  Evaluation / fidelity view
@@ -304,8 +318,11 @@ Then open <http://localhost:8080>.
 
 > The dashboard is the only implemented route. The other six navigation destinations are
 > deliberately not clickable until their task lands, so no link produces a 404.
+> The application starts with the mock profile active, which supplies in-memory stand-ins
+for backend services that do not exist yet. Override with SFS_PROFILE when real services
+arrive.
 
-Run on a different port without editing any file:
+Run on a different port :
 
 ```bash
 mvn -pl sfs-ui spring-boot:run -Dspring-boot.run.arguments=--server.port=9090
@@ -334,10 +351,12 @@ sfs/
 │
 ├── sfs-contracts/          # service interfaces + request/response models
 │   └── src/main/java/com/sfs/contracts/
+│       └── file/           # FileService, FileSummary, FileStatus, requests, results
 │
 └── sfs-ui/                 # server-rendered web UI
     ├── src/main/java/com/sfs/ui/
     │   ├── controller/     # request handling only, no domain logic
+    │   ├── mock/           # in-memory stand-ins, active under the "mock" profile
     │   └── view/           # immutable presentation view models
     ├── src/main/resources/
     │   ├── application.properties
@@ -358,7 +377,7 @@ sfs-ui  ──►  sfs-contracts  ──►  sfs-core
 | Language | Java 21 LTS | Records for immutable value objects, sealed types for state machines, virtual threads for background analysis |
 | Build | Maven 3.9.16 multi-module | Build-enforced architectural boundaries |
 | Web | Spring Boot 4.1.0 + Thymeleaf | Server-rendered; |
-| Frontend | Vanilla JS only | lightweight UI framework |
+| Frontend | Vanilla JS only |  UI framework |
 | Testing | JUnit 5 + AssertJ | |
 ---
 
@@ -410,8 +429,6 @@ Reconstruction quality is decomposed rather than reported as a single score, so 
 | Search / Reconstruction Latency | Query-to-results and request-to-artifact timing |
 | Analysis Cost | CPU / RAM / time to build Semantic DNA |
 
-Confidence is never reported as accuracy without calibration.
-
 ---
 
 ## Known Limitations
@@ -425,15 +442,15 @@ Confidence is never reported as accuracy without calibration.
 - Single-machine deployment. Distributed operation is not addressed.
 
 **Current:**
-
-- Only the dashboard route exists. Six of the seven navigation destinations are inert.
-- The UI calls no services. Screens are rendered from static data; mock services begin in Task 01.2.
-- `sfs-core` and `sfs-contracts` contain package documentation only.
-- Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, `aria-current`, `aria-disabled`) and has not been screen-reader audited.
-- `spring-boot-starter-web` is deprecated in Spring Boot 4 in favour of `spring-boot-starter-webmvc`; the rename is pending a dedicated task.
-- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit in M14.
-- Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
-
+Only the dashboard route exists. Six of the seven navigation destinations are inert.
+The Files screen is backed by an in-memory mock, not the File Lifecycle Manager. Imported files are not persisted, are not analyzed, and are lost on restart.
+Deleting raw data is a single click with no confirmation step. Acceptable while the data is mock; it needs an interstitial before any real implementation.
+The file list is not paginated.
+sfs-core and sfs-contracts contain package only.
+Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, aria-current, aria-disabled) and has not been screen-reader audited.
+spring-boot-starter-web is deprecated in Spring Boot 4 in favour of spring-boot-starter-webmvc; the rename is pending a dedicated task.
+The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit .
+Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
 
 ---
 
