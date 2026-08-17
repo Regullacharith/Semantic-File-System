@@ -7,6 +7,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Verifies the navigation registry.
+ */
 @DisplayName("NavigationItem")
 class NavigationItemTest {
 
@@ -17,13 +20,25 @@ class NavigationItemTest {
     }
 
     @Test
-    @DisplayName("marks only the dashboard as implemented at Task 01.1")
-    void onlyDashboardIsAvailable() {
+    @DisplayName("marks the dashboard and files screens as implemented")
+    void implementedDestinationsAreAvailable() {
+        // Updated as each task lands a screen. Asserting the exact set, rather than a
+        // count, means enabling a destination prematurely fails the build.
         assertThat(NavigationItem.all())
                 .filteredOn(NavigationItem::isAvailable)
-                .containsExactly(NavigationItem.HOME);
+                .containsExactly(NavigationItem.HOME, NavigationItem.FILES);
+    }
 
-        assertThat(NavigationItem.planned()).hasSize(6);
+    @Test
+    @DisplayName("leaves destinations without a route marked planned")
+    void unimplementedDestinationsArePlanned() {
+        assertThat(NavigationItem.planned())
+                .containsExactly(
+                        NavigationItem.SEARCH,
+                        NavigationItem.OBJECTS,
+                        NavigationItem.RECONSTRUCTION,
+                        NavigationItem.EVALUATION,
+                        NavigationItem.SETTINGS);
     }
 
     @ParameterizedTest

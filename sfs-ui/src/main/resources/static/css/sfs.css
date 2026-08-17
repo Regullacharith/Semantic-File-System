@@ -1,3 +1,7 @@
+/*
+ * SFS user interface stylesheet.
+ */
+
 :root {
     --colour-bg: #f7f7f8;
     --colour-surface: #ffffff;
@@ -249,3 +253,185 @@ a.app-nav__link:focus {
     margin: 0 0 var(--space-xs);
 }
 
+/* ------------------------------------------------------------- alerts */
+
+.alert {
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    background: var(--colour-surface);
+}
+
+.alert--success {
+    background: #eef7ee;
+    border-color: #86b586;
+}
+
+.alert--failure {
+    background: #fdeeee;
+    border-color: #d08b8b;
+}
+
+/* -------------------------------------------------------------- forms */
+
+.import-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.import-form__label {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.button {
+    padding: var(--space-xs) var(--space-md);
+    font-size: 0.86rem;
+    font-family: inherit;
+    color: var(--colour-accent);
+    background: var(--colour-surface);
+    border: 1px solid var(--colour-accent);
+    border-radius: var(--radius);
+    cursor: pointer;
+}
+
+.button:hover,
+.button:focus {
+    background: var(--colour-accent-soft);
+}
+
+.button--primary {
+    color: #ffffff;
+    background: var(--colour-accent);
+}
+
+.button--primary:hover,
+.button--primary:focus {
+    background: #163a5a;
+}
+
+.button--danger {
+    color: #8a2b2b;
+    border-color: #c07474;
+}
+
+.button--danger:hover,
+.button--danger:focus {
+    background: #fdeeee;
+}
+
+/* ------------------------------------------------------------- tables */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--colour-surface);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+}
+
+.data-table th,
+.data-table td {
+    padding: var(--space-sm) var(--space-md);
+    text-align: left;
+    border-bottom: 1px solid var(--colour-border);
+    vertical-align: middle;
+}
+
+.data-table th {
+    background: var(--colour-bg);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--colour-text-muted);
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Memorized records are visually distinct from live files. */
+.row--memorized {
+    background: #fbfbfc;
+    color: var(--colour-text-muted);
+    font-style: italic;
+}
+
+.object-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    color: var(--colour-text-muted);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    align-items: center;
+}
+
+/* ------------------------------------------------------- status badges */
+
+.status-badge {
+    display: inline-block;
+    padding: 1px var(--space-sm);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    background: var(--colour-bg);
+}
+
+.status-badge--analyzed {
+    background: #eef7ee;
+    border-color: #86b586;
+}
+
+.status-badge--memorized {
+    background: var(--colour-accent-soft);
+    border-color: var(--colour-accent);
+}
+
+.status-badge--failed {
+    background: #fdeeee;
+    border-color: #d08b8b;
+}
+
+/* --------------------------------------------------------------- misc */
+
+.hint {
+    font-size: 0.82rem;
+    color: var(--colour-text-muted);
+    margin: var(--space-sm) 0 0;
+}
+
+.hint--inline {
+    margin: 0;
+}
+
+.empty-state {
+    padding: var(--space-lg);
+    text-align: center;
+    color: var(--colour-text-muted);
+    background: var(--colour-surface);
+    border: 1px dashed var(--colour-border);
+    border-radius: var(--radius);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}

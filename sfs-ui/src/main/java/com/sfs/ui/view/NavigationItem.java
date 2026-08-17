@@ -3,27 +3,30 @@ package com.sfs.ui.view;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The navigation destinations of the SFS user interface.
+ */
 public enum NavigationItem {
 
-    /** Dashboard / landing view. Owned by Task 01.1. */
+    /** Dashboard / landing view. */
     HOME("Dashboard", "/", "Overview of the Semantic File System", true),
 
-    /** File import, analyze and delete controls. Owned by Task 01.2. */
-    FILES("Files", "/files", "Import, analyze and delete files", false),
+    /** File import, analyze and delete controls. */
+    FILES("Files", "/files", "Import, analyze and delete files", true),
 
-    /** Semantic Search view. Owned by Task 01.3. */
+    /** Semantic Search view.  */
     SEARCH("Search", "/search", "Find semantic records by meaning", false),
 
-    /** Object / Semantic DNA inspection view. Owned by Task 01.4. */
+    /** Object / Semantic DNA inspection view.  */
     OBJECTS("Objects", "/objects", "Inspect Object IDs and Semantic DNA", false),
 
-    /** Single-click reconstruction flow. Owned by Task 01.5. */
+    /** Single-click reconstruction flow.  */
     RECONSTRUCTION("Reconstruction", "/reconstruction", "Reconstruct artifacts from semantic memory", false),
 
-    /** Evaluation / fidelity view. Owned by Task 01.6. */
+    /** Evaluation / fidelity view. */
     EVALUATION("Evaluation", "/evaluation", "Semantic, structural and factual fidelity reports", false),
 
-    /** Security and policy settings. Owned by Task 01.7. */
+    /** Security and policy settings.*/
     SETTINGS("Settings", "/settings", "Security and privacy policy configuration", false);
 
     private final String label;
@@ -52,8 +55,6 @@ public enum NavigationItem {
 
     /**
      * Whether the destination has an implemented route.
-     *
-     * @return {@code true} if the screen exists and may be linked to
      */
     public boolean isAvailable() {
         return available;
@@ -61,8 +62,6 @@ public enum NavigationItem {
 
     /**
      * All navigation destinations in display order.
-     *
-     * @return an immutable list in declaration order
      */
     public static List<NavigationItem> all() {
         return List.of(values());
@@ -70,8 +69,6 @@ public enum NavigationItem {
 
     /**
      * Destinations that are not yet implemented.
-     *
-     * @return an immutable list of planned destinations, in declaration order
      */
     public static List<NavigationItem> planned() {
         return Arrays.stream(values())
@@ -79,3 +76,4 @@ public enum NavigationItem {
                 .toList();
     }
 }
+

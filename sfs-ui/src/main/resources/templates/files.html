@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!--/*
+    File import, analyze and semantic-deletion controls.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #files-content})}"
+      lang="en">
+
+<head>
+    <title>Files</title>
+</head>
+
+<body>
+
+<div id="files-content">
+
+    <h1 class="page-title">Files</h1>
+
+    <p class="page-lead">
+        Import a text file to register it and receive a stable Object ID. Analysis and
+        semantic deletion are separate, explicit actions.
+    </p>
+
+    <!--/* Outcome of the previous action. Always shown, success or failure. */-->
+    <div th:if="${resultMessage}"
+         th:classappend="${resultSuccess} ? 'alert--success' : 'alert--failure'"
+         class="alert"
+         role="status">
+        <span th:text="${resultMessage}">Result</span>
+    </div>
+
+    <section class="panel" aria-labelledby="import-heading">
+        <h2 class="panel__heading" id="import-heading">Import a text file</h2>
+
+        <form th:action="@{/files/import}" method="post" enctype="multipart/form-data"
+              class="import-form">
+            <label class="import-form__label" for="file">Text file (UTF-8, max 5 MB)</label>
+            <input type="file" id="file" name="file" accept=".txt,text/plain" required>
+            <button type="submit" class="button button--primary">Import</button>
+        </form>
+
+        <p class="hint">
+            Importing registers the file and assigns an Object ID. It does not analyze it.
+        </p>
+    </section>
+
+    <section aria-labelledby="files-heading">
+        <h2 class="section-heading" id="files-heading">Registered files</h2>
+
+        <p th:if="${#lists.isEmpty(files)}" class="empty-state">
+            No files have been imported yet.
+        </p>
+
+        <table th:unless="${#lists.isEmpty(files)}" class="data-table">
+            <caption class="visually-hidden">Registered files and their lifecycle status</caption>
+            <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Object ID</th>
+                <th scope="col">Status</th>
+                <th scope="col">Size</th>
+                <th scope="col">Registered</th>
+                <th scope="col">Analyzed</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="file : ${files}"
+                th:classappend="${file.rawDataRemoved} ? 'row--memorized' : ''">
+
+                <td th:text="${file.displayName}">name.txt</td>
+
+                <td><code class="object-id" th:text="${file.objectId}">id</code></td>
+
+                <td>
+                    <span class="status-badge"
+                          th:classappend="'status-badge--' + ${#strings.toLowerCase(file.statusLabel)}"
+                          th:text="${file.statusLabel}"
+                          th:title="${file.statusDescription}">Status</span>
+                </td>
+
+                <td th:text="${file.formattedSize}">0 B</td>
+                <td th:text="${file.registeredAt}">—</td>
+                <td th:text="${file.analyzedAt}">—</td>
+
+                <td class="actions">
+                    <form th:if="${file.canAnalyze}"
+                          th:action="@{'/files/' + ${file.objectId} + '/analyze'}"
+                          method="post" class="inline-form">
+                        <button type="submit" class="button">Analyze</button>
+                    </form>
+
+                    <!--/*
+                        Semantic deletion removes raw bytes only. It is offered exclusively
+                        when the service reports the record is safe to memorize.
+                    */-->
+                    <form th:if="${file.canDelete}"
+                          th:action="@{'/files/' + ${file.objectId} + '/delete-raw'}"
+                          method="post" class="inline-form">
+                        <button type="submit" class="button button--danger">Delete raw data</button>
+                    </form>
+
+                    <span th:if="${file.rawDataRemoved}" class="hint hint--inline">
+                        Semantic Record retained
+                    </span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel panel--notice" aria-labelledby="deletion-heading">
+        <h2 class="panel__heading" id="deletion-heading">About semantic deletion</h2>
+        <p>
+            "Delete raw data" removes the original bytes but keeps the Semantic Record, which
+            remains searchable and can be used to reconstruct a new artifact. It is refused
+            until the file has been analyzed and its Semantic Record durably committed.
+        </p>
+        <p>
+            This build uses mock data. No semantic analysis is performed and no Semantic DNA
+            is produced.
+        </p>
+    </section>
+
+</div>
+
+</body>
+</html>
