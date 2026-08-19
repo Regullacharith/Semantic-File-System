@@ -214,30 +214,46 @@ live file → register → background analysis → Semantic DNA + Rules + securi
 | | |
 |---|---|
 | **Current milestone** | M01 — User / Interface Layer |
-| **Completed task**	 |Semantic Search view |
+| **Completed task**	 | Object / Semantic DNA view |
 | **Automated tests** | |
 
-What exists today: a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
+**What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
 application bootstrap, explicit module boundaries enforced by an executable architecture test,
 the lightweight UI shell — base layout and primary navigation covering all seven Milestone 01
-destinations — plus two working screens: the dashboard and the Files screen. The remaining
-five destinations render as visibly disabled items rather than links, so no navigation action
-produces a silent 404.
+destinations — plus four working screens: the dashboard, Files, Semantic Search and the
+Object / Semantic DNA inspector. The remaining three destinations render as visibly disabled
+items rather than links, so no navigation action produces a silent 404.
 
 The Files screen imports a UTF-8 text file, assigns an Object ID, requests analysis and
-performs semantic deletion. It is backed by MockFileService, an in-memory stand-in — not
-the real File Lifecycle Manager. The mock deliberately enforces the lifecycle rules rather
+performs semantic deletion. It is backed by **`MockFileService`, an in-memory stand-in** — not
+the real File Lifecycle Manager. The mock deliberately enforces the lifecycle *rules* rather
 than merely storing data: semantic deletion is refused unless a file has been analyzed,
 mirroring the constraint that raw bytes may never be removed before a validated Semantic
 Record is durably committed. Its state resets when the application restarts.
 
-What does not exist yet: Text Adapter, Semantic Engine, Semantic DNA, Memory Database,
-Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction
-Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. No semantic
-analysis is performed and no Semantic DNA is produced — importing a file registers a name
-and a size, nothing more. Nothing is persisted. These arrive in their designated milestones.
+The Search screen finds records by meaning, shows the evidence behind each match, resolves an
+exact Object ID directly instead of by similarity, and keeps memorized records findable after
+their raw bytes are gone. It is backed by **`MockSearchService`** — keyword overlap against a
+fixed corpus, with **no embeddings, no vector index and no reranking**. Search deliberately
+offers no reconstruction control: search returns Object IDs, and reconstruction is a separate
+explicit action.
 
-Verification status is tracked deliberately — implemented, compiled, unit-tested, integration-tested, experimentally evaluated, and accepted are distinct states and are never conflated. No fidelity percentage is treated as a fact unless a reproducible measurement produces it.
+The Objects screen inspects a record's Semantic DNA: summary, concepts, topics, entities,
+facts, relationships, document structure and representation quality. It shows the defining SFS
+behaviour directly — a memorized object whose raw file is gone still displays its complete
+semantic memory. Sensitive values are rendered as **protected references described by semantic
+role**, never by value; the contract type has no field capable of holding a plaintext secret,
+and passwords are marked non-reversible rather than offered for retrieval. Embedding
+dimensionality is reported but the vector itself is never rendered. Backed by
+**`MockSemanticRecordService`** — hand-written fixtures..
+
+**What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database,
+Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction
+Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. **No semantic
+analysis is performed and no Semantic DNA is produced** — importing a file registers a name
+and a size, nothing more. Nothing is persisted.
+
+Verification status is tracked deliberately — *implemented*, *compiled*, *unit-tested*, *integration-tested*, *experimentally evaluated*, and *accepted* are distinct states and are never conflated. No fidelity percentage is treated as a fact unless a reproducible measurement produces it.
 ---
 ### M01 sequence
 
@@ -248,8 +264,8 @@ M01 — User / Interface Layer
  ├── 01.1  UI shell and navigation                              ✅ complete
  ├── 01.2  File import / analyze / delete controls              ✅ complete
  ├── 01.3  Semantic Search view                                 ✅ complete
- ├── 01.4  Object / Semantic DNA view                           ◀ next
- ├── 01.5  Single-click reconstruction flow
+ ├── 01.4  Object / Semantic DNA view                           ✅ complete
+ ├── 01.5  Single-click reconstruction flow                     ◀ next
  ├── 01.6  Evaluation / fidelity view
  ├── 01.7  Security / policy settings
  └── 01.8  Milestone integration tests + acceptance report
@@ -316,12 +332,12 @@ mvn -pl sfs-ui spring-boot:run
 
 Then open <http://localhost:8080>.
 
-"The dashboard, Files and Search screens are implemented. The other four navigation destinations are
-deliberately not clickable until their task lands, so no link produces a 404.
-
-The application starts with the mock profile active, which supplies in-memory stand-ins
-for backend services that do not exist yet. Override with SFS_PROFILE when real services
-arrive."
+> The dashboard, Files, Search and Objects screens are implemented. The other three navigation destinations are
+> deliberately not clickable until their task lands, so no link produces a 404.
+>
+> The application starts with the `mock` profile active, which supplies in-memory stand-ins
+> for backend services that do not exist yet. Override with `SFS_PROFILE` when real services
+> arrive.
 
 Run on a different port :
 
@@ -353,7 +369,8 @@ sfs/
 ├── sfs-contracts/          # service interfaces + request/response models
 │   └── src/main/java/com/sfs/contracts/
 │       ├── file/           # FileService, FileSummary, FileStatus, requests, results
-│       └── search/         # SearchService, SearchQuery, SearchResult, evidence
+│       ├── search/         # SearchService, SearchQuery, SearchResult, evidence
+│       └── semantic/       # SemanticDnaView, ProtectedReferenceView, record service
 │
 └── sfs-ui/                 # server-rendered web UI
     ├── src/main/java/com/sfs/ui/
@@ -379,8 +396,8 @@ sfs-ui  ──►  sfs-contracts  ──►  sfs-core
 | Language | Java 21 LTS | Records for immutable value objects, sealed types for state machines, virtual threads for background analysis |
 | Build | Maven 3.9.16 multi-module | Build-enforced architectural boundaries |
 | Web | Spring Boot 4.1.0 + Thymeleaf | Server-rendered; |
-| Frontend | Vanilla JS only |  UI framework |
-| Testing | JUnit 5 + AssertJ | |
+| Frontend | Vanilla JS only | lightweight UI framework |
+| Testing | JUnit 5 + AssertJ | 
 ---
 
 ## Milestone Roadmap
@@ -444,35 +461,44 @@ Reconstruction quality is decomposed rather than reported as a single score, so 
 - Single-machine deployment. Distributed operation is not addressed.
 
 **Current:**
-Only the dashboard route exists. Six of the seven navigation destinations are inert.
-The Files screen is backed by an in-memory mock, not the File Lifecycle Manager. Imported files are not persisted, are not analyzed, and are lost on restart.
-Deleting raw data is a single click with no confirmation step. Acceptable while the data is mock; it needs an interstitial before any real implementation.
-The file list is not paginated.
-Search is keyword overlap against a fixed four-document corpus, not semantic retrieval. Relevance scores are illustrative and carry no measured meaning.
-Search results are not paginated and cannot be filtered by status or date.
-sfs-core and sfs-contracts contain package only.
-Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, aria-current, aria-disabled) and has not been screen-reader audited.
-spring-boot-starter-web is deprecated in Spring Boot 4 in favour of spring-boot-starter-webmvc; the rename is pending a dedicated task.
-The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit.
-Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
+
+- Only the dashboard route exists. Six of the seven navigation destinations are inert.
+- The Files screen is backed by an in-memory mock, not the File Lifecycle Manager. Imported files are not persisted, are not analyzed, and are lost on restart.
+- Deleting raw data is a single click with no confirmation step. Acceptable while the data is mock; it needs an interstitial before any real implementation.
+- The file list is not paginated.
+- Search is keyword overlap against a fixed four-document corpus, not semantic retrieval. Relevance scores are illustrative and carry no measured meaning.
+- Search results are not paginated and cannot be filtered by status or date.
+- Semantic DNA shown on the Objects screen is hand-written fixture data. No document is analysed, and confidence figures are illustrative rather than measured.
+- Object detail is read-only by design. Semantic DNA is produced by the Semantic Engine and amended through the improvement loop, never edited through the interface.
+- `sfs-core` and `sfs-contracts` contain package documentation only.
+- Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, `aria-current`, `aria-disabled`) and has not been screen-reader audited.
+- `spring-boot-starter-web` is deprecated in Spring Boot 4 in favour of `spring-boot-starter-webmvc`; the rename is pending a dedicated task.
+- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit in .
+- Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
 
 ---
 
 ## License
 
-Copyright © 2026 Regullacharith
+**Copyright © 2026 Regullacharith. All rights reserved.**
 
-All rights reserved.
+This is **proprietary software**, not open source. The SFS source code, documentation,
+architecture, design materials and original research materials are the property of the
+copyright holder.
 
-The SFS source code, documentation, architecture, and original
-project materials are proprietary to the copyright holder.
+No permission is granted to copy, reproduce, redistribute, modify, adapt, translate,
+create derivative works from, publish, distribute, sublicense, sell, commercially exploit,
+or incorporate this project — or substantial portions of it — into another software product
+or service, without prior written permission from the copyright holder.
 
-No permission is granted to reproduce, modify, distribute,
-sublicense, or commercially exploit this project without
-express written permission from the copyright holder.
+The copyright holder retains all rights not expressly granted.
 
-Third-party dependencies and components remain subject to
-their respective licenses.
+**Third-party components.** SFS uses third-party libraries, frameworks and tools that are
+**not** covered by the above notice. Each remains subject to its own license and copyright
+terms; nothing here relicenses third-party material.
+
+**No warranty.** The project is provided "as is", without warranty of any kind, express or
+implied, to the extent permitted by applicable law.
 
 See [`LICENSE`](LICENSE) for the complete and authoritative terms. Where this summary and
 the `LICENSE` file differ, the `LICENSE` file governs.
