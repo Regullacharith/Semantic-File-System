@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--/*
+ reconstruction job
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #job-content})}"
+      lang="en">
+
+<head>
+    <title>Reconstruction job</title>
+</head>
+
+<body>
+
+<div id="job-content">
+
+    <p class="breadcrumb"><a th:href="@{/reconstruction}">← All reconstruction jobs</a></p>
+
+    <h1 class="page-title">Reconstruction job</h1>
+
+    <div th:if="${resultMessage}"
+         th:classappend="${resultSuccess} ? 'alert--success' : 'alert--failure'"
+         class="alert" role="status">
+        <span th:text="${resultMessage}">Result</span>
+    </div>
+
+    <section class="panel" aria-labelledby="job-heading">
+        <h2 class="panel__heading" id="job-heading">Job</h2>
+        <dl class="detail-grid">
+            <dt>Job ID</dt>
+            <dd><code class="object-id" th:text="${job.jobId}">job</code></dd>
+
+            <dt>Status</dt>
+            <dd>
+                <span class="status-badge"
+                      th:classappend="'status-badge--' + ${#strings.toLowerCase(job.status.label)}"
+                      th:text="${job.status.label}">Status</span>
+                <span class="hint hint--inline" th:text="${job.status.description}">desc</span>
+            </dd>
+
+            <dt>Source object</dt>
+            <dd>
+                <a th:href="@{'/objects/' + ${job.objectId}}">
+                    <code class="object-id" th:text="${job.objectId}">id</code>
+                </a>
+                <span th:text="${job.sourceName}">name.txt</span>
+            </dd>
+        </dl>
+    </section>
+
+    <section class="panel" aria-labelledby="provenance-heading">
+        <h2 class="panel__heading" id="provenance-heading">Provenance</h2>
+        <dl class="detail-grid">
+            <dt>Semantic DNA</dt>
+            <dd><code class="object-id" th:text="${job.dnaVersion}">dna</code></dd>
+
+            <dt>Reconstruction Rules</dt>
+            <dd><code class="object-id" th:text="${job.rulesVersion}">rules</code></dd>
+
+            <dt>Model</dt>
+            <dd><code class="object-id" th:text="${job.modelVersion}">model</code></dd>
+        </dl>
+        <p class="hint">
+            Repeating this reconstruction with the same versions produces the same result.
+        </p>
+    </section>
+
+    <section th:if="${job.hasFindings()}" class="panel" aria-labelledby="verification-heading">
+        <h2 class="panel__heading" id="verification-heading">Verification</h2>
+        <ul class="finding-list">
+            <li th:each="finding : ${job.constraintFindings}"
+                th:class="'finding finding--' + ${#strings.toLowerCase(finding.severity.label)}">
+                <span class="status-badge"
+                      th:classappend="'status-badge--' + ${#strings.toLowerCase(finding.severity.label)}"
+                      th:text="${finding.severity.label}">Severity</span>
+                <span class="finding__constraint" th:text="${finding.constraint}">Constraint</span>
+                <span class="finding__detail" th:text="${finding.detail}">Detail</span>
+            </li>
+        </ul>
+    </section>
+
+    <div th:if="${job.failureReason != null}" class="alert alert--failure" role="alert">
+        <strong>No artifact was produced.</strong>
+        <span th:text="${job.failureReason}">Reason</span>
+    </div>
+
+    <section th:if="${job.hasArtifact()}" class="panel" aria-labelledby="artifact-heading">
+        <h2 class="panel__heading" id="artifact-heading">Artifact</h2>
+        <dl class="detail-grid">
+            <dt>File name</dt>
+            <dd><code class="object-id" th:text="${job.artifactName}">name</code></dd>
+            <dt>Size</dt>
+            <dd th:text="${job.artifactBytes} + ' bytes'">0</dd>
+        </dl>
+
+        <p>
+            <a th:href="@{'/reconstruction/job/' + ${job.jobId} + '/artifact'}"
+               class="button button--primary">Download reconstructed text</a>
+        </p>
+
+        <p class="hint hint--strong">
+            This file is a new document regenerated from semantic memory. It is not a copy of
+            the original and its exact wording will differ. The file itself carries a header
+            saying so.
+        </p>
+    </section>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<!--/*
+    Reconstruction job list.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #reconstruction-content})}"
+      lang="en">
+
+<head>
+    <title>Reconstruction</title>
+</head>
+
+<body>
+
+<div id="reconstruction-content">
+
+    <h1 class="page-title">Reconstruction</h1>
+
+    <p class="page-lead">
+        Reconstruction regenerates a new text document from an object's semantic memory. The
+        result is <strong>semantically equivalent, not byte-for-byte identical</strong> — the
+        original wording is not recoverable once the raw file is gone.
+    </p>
+
+    <section class="panel panel--notice">
+        <h2 class="panel__heading">Starting a reconstruction</h2>
+        <p>
+            Open an object from the <a th:href="@{/objects}">Objects</a> screen and use its
+            reconstruct button. Reconstruction never starts automatically, and searching for a
+            record never triggers it.
+        </p>
+    </section>
+
+    <h2 class="section-heading">Jobs</h2>
+
+    <p th:if="${#lists.isEmpty(jobs)}" class="empty-state">
+        No reconstruction jobs have been requested yet.
+    </p>
+
+    <table th:unless="${#lists.isEmpty(jobs)}" class="data-table">
+        <caption class="visually-hidden">Reconstruction jobs</caption>
+        <thead>
+        <tr>
+            <th scope="col">Job</th>
+            <th scope="col">Source</th>
+            <th scope="col">Status</th>
+            <th scope="col">Model</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="job : ${jobs}">
+            <td><code class="object-id" th:text="${job.jobId}">job</code></td>
+            <td th:text="${job.sourceName}">name.txt</td>
+            <td>
+                <span class="status-badge"
+                      th:classappend="'status-badge--' + ${#strings.toLowerCase(job.status.label)}"
+                      th:text="${job.status.label}"
+                      th:title="${job.status.description}">Status</span>
+            </td>
+            <td><code class="object-id" th:text="${job.modelVersion}">model</code></td>
+            <td>
+                <a th:href="@{'/reconstruction/job/' + ${job.jobId}}" class="button">View</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>
