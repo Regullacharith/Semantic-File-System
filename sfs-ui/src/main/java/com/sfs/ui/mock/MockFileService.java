@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Profile("mock")
 public class MockFileService implements FileService {
 
-    /** Seeded sample count, kept small so the list view stays readable. */
-    private static final int SEED_COUNT = 3;
+    private static final int SEED_COUNT = 4;
 
     private final Map<String, FileSummary> filesByObjectId = new ConcurrentHashMap<>();
     private final AtomicLong sequence = new AtomicLong();
@@ -57,7 +56,6 @@ public class MockFileService implements FileService {
 
         String objectId = nextObjectId();
 
-        // The content length is recorded; the content itself is intentionally not retained.
         FileSummary summary = new FileSummary(
                 objectId,
                 request.fileName(),
@@ -87,8 +85,6 @@ public class MockFileService implements FileService {
                     "Analysis is not permitted while the file is " + file.status().getLabel() + ".");
         }
 
-        // A real pipeline would queue an asynchronous job here. The mock completes
-        // immediately and produces no Semantic DNA.
         filesByObjectId.put(objectId, new FileSummary(
                 file.objectId(),
                 file.displayName(),
@@ -116,8 +112,6 @@ public class MockFileService implements FileService {
                     "The raw bytes for this object have already been removed.");
         }
 
-        // The central safety rule: raw data may not be removed before a validated
-        // Semantic Record has been durably committed.
         if (!file.status().allowsSemanticDeletion()) {
             return FileOperationResult.failure(
                     "Semantic deletion is refused: the file must be analyzed and its Semantic "
@@ -138,29 +132,28 @@ public class MockFileService implements FileService {
                 "Raw bytes removed. The Semantic Record survives and remains searchable.");
     }
 
-    /**
-     * Generates a deterministic-prefixed identifier.
-     */
     private String nextObjectId() {
         return "sfs-obj-%04d-%s".formatted(
                 sequence.incrementAndGet(),
                 UUID.randomUUID().toString().substring(0, 8));
     }
 
-    /**
-     * Seeds a few records so the list view is not empty on a fresh start.
-     */
     private void seedSampleData() {
         Instant now = Instant.now();
 
-        put(new FileSummary(nextObjectId(), "meeting-notes.txt",
-                FileStatus.REGISTERED, 2_048, now.minusSeconds(7_200), null));
-
-        put(new FileSummary(nextObjectId(), "research-summary.txt",
+        put(new FileSummary("sfs-obj-0001-a1b2c3d4", "research-summary.txt",
                 FileStatus.ANALYZED, 15_360, now.minusSeconds(3_600), now.minusSeconds(3_400)));
 
-        put(new FileSummary(nextObjectId(), "archived-report.txt",
+        put(new FileSummary("sfs-obj-0002-e5f6a7b8", "archived-report.txt",
                 FileStatus.MEMORIZED, 8_192, now.minusSeconds(86_400), now.minusSeconds(86_000)));
+
+        put(new FileSummary("sfs-obj-0003-c9d0e1f2", "meeting-notes.txt",
+                FileStatus.REGISTERED, 2_048, now.minusSeconds(7_200), null));
+
+        put(new FileSummary("sfs-obj-0004-b3c4d5e6", "deployment-config.txt",
+                FileStatus.ANALYZED, 4_096, now.minusSeconds(10_800), now.minusSeconds(10_600)));
+
+        sequence.set(SEED_COUNT);
 
         assert filesByObjectId.size() == SEED_COUNT;
     }

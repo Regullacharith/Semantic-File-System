@@ -14,16 +14,16 @@ public enum NavigationItem {
     /** File import, analyze and delete controls. */
     FILES("Files", "/files", "Import, analyze and delete files", true),
 
-    /** Semantic Search view.  */
+    /** Semantic Search view. */
     SEARCH("Search", "/search", "Find semantic records by meaning", true),
 
     /** Object / Semantic DNA inspection view. */
-    OBJECTS("Objects", "/objects", "Inspect Object IDs and Semantic DNA", false),
+    OBJECTS("Objects", "/objects", "Inspect Object IDs and Semantic DNA", true),
 
-    /** Single-click reconstruction flow.  */
+    /** Single-click reconstruction flow. */
     RECONSTRUCTION("Reconstruction", "/reconstruction", "Reconstruct artifacts from semantic memory", false),
 
-    /** Evaluation / fidelity view.  */
+    /** Evaluation / fidelity view. */
     EVALUATION("Evaluation", "/evaluation", "Semantic, structural and factual fidelity reports", false),
 
     /** Security and policy settings.  */
@@ -53,19 +53,14 @@ public enum NavigationItem {
         return description;
     }
 
-    
     public boolean isAvailable() {
         return available;
     }
 
-    /**
-     * All navigation destinations in display order.
-     */
     public static List<NavigationItem> all() {
         return List.of(values());
     }
 
- 
     public static List<NavigationItem> planned() {
         return Arrays.stream(values())
                 .filter(item -> !item.available)
