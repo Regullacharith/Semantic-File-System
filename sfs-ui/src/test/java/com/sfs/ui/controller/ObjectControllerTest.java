@@ -225,17 +225,37 @@ class ObjectControllerTest {
     // ------------------------------------------------------------ read-only
 
     @Test
-    @DisplayName("exposes no mutating route and no reconstruction control")
-    void isReadOnly() throws Exception {
+    @DisplayName("exposes no route that mutates semantic memory")
+    void exposesNoMutatingRoute() throws Exception {
+        given(fileService.findByObjectId(OBJECT_ID)).willReturn(Optional.of(file(FileStatus.ANALYZED)));
+        given(semanticRecordService.findSemanticDna(OBJECT_ID)).willReturn(Optional.of(dna(List.of())));
+
+        mockMvc.perform(post("/objects/" + OBJECT_ID))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("offers reconstruction as an explicit POST, never as a link")
+    void offersReconstructionOnlyAsExplicitPost() throws Exception {
         given(fileService.findByObjectId(OBJECT_ID)).willReturn(Optional.of(file(FileStatus.ANALYZED)));
         given(semanticRecordService.findSemanticDna(OBJECT_ID)).willReturn(Optional.of(dna(List.of())));
 
         mockMvc.perform(get("/objects/" + OBJECT_ID))
                 .andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("method=\"post\""))))
-                .andExpect(content().string(not(containsString("/reconstruct"))));
+                .andExpect(content().string(containsString(
+                        "<form action=\"/reconstruction/" + OBJECT_ID + "\" method=\"post\">")))
+                .andExpect(content().string(not(containsString(
+                        "href=\"/reconstruction/" + OBJECT_ID + "\""))));
+    }
 
-        mockMvc.perform(post("/objects/" + OBJECT_ID))
-                .andExpect(status().is4xxClientError());
+    @Test
+    @DisplayName("offers no reconstruction control for an object without Semantic DNA")
+    void offersNoReconstructionWithoutDna() throws Exception {
+        given(fileService.findByObjectId(OBJECT_ID)).willReturn(Optional.of(file(FileStatus.REGISTERED)));
+        given(semanticRecordService.findSemanticDna(OBJECT_ID)).willReturn(Optional.empty());
+
+        mockMvc.perform(get("/objects/" + OBJECT_ID))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Reconstruct this object"))));
     }
 }

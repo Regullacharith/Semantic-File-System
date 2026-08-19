@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Verifies the search view
- */
+*/
 @WebMvcTest(SearchController.class)
 @DisplayName("Semantic search view")
 class SearchControllerTest {
@@ -59,7 +59,6 @@ class SearchControllerTest {
                 .andExpect(view().name("search"))
                 .andExpect(model().attribute("searched", false));
 
-        // An empty page load must not execute a query.
         verify(searchService, never()).search(any());
     }
 
@@ -154,12 +153,11 @@ class SearchControllerTest {
     void offersNoReconstructionControl() throws Exception {
         given(searchService.search(any()))
                 .willReturn(responseWith(result("sfs-obj-0001-aaaa", "notes.txt", FileStatus.ANALYZED)));
-
-        // Search returns Object IDs
-        mockMvc.perform(get("/search").param("q", "database"))
+               mockMvc.perform(get("/search").param("q", "database"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("/reconstruct"))))
-                .andExpect(content().string(not(containsString("method=\"post\""))));
+                .andExpect(content().string(not(containsString("method=\"post\""))))
+                .andExpect(content().string(not(containsString(
+                        "action=\"/reconstruction/sfs-obj-0001-aaaa\""))));
     }
 
     @Test

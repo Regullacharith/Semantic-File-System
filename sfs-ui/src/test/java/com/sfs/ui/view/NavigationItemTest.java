@@ -20,7 +20,7 @@ class NavigationItemTest {
     }
 
     @Test
-    @DisplayName("marks the dashboard, files, search and objects screens as implemented")
+    @DisplayName("marks the dashboard, files, search, objects and reconstruction screens as implemented")
     void implementedDestinationsAreAvailable() {
         assertThat(NavigationItem.all())
                 .filteredOn(NavigationItem::isAvailable)
@@ -28,7 +28,8 @@ class NavigationItemTest {
                         NavigationItem.HOME,
                         NavigationItem.FILES,
                         NavigationItem.SEARCH,
-                        NavigationItem.OBJECTS);
+                        NavigationItem.OBJECTS,
+                        NavigationItem.RECONSTRUCTION);
     }
 
     @Test
@@ -36,7 +37,6 @@ class NavigationItemTest {
     void unimplementedDestinationsArePlanned() {
         assertThat(NavigationItem.planned())
                 .containsExactly(
-                        NavigationItem.RECONSTRUCTION,
                         NavigationItem.EVALUATION,
                         NavigationItem.SETTINGS);
     }

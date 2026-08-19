@@ -160,7 +160,7 @@
                     th:text="${node.heading}">Heading</li>
             </ul>
         </section>
-        
+
         <section class="panel" aria-labelledby="fidelity-heading">
             <h2 class="panel__heading" id="fidelity-heading">Representation quality</h2>
             <dl class="detail-grid">
@@ -188,6 +188,26 @@
             <p>
                 This build uses fixture data. No document was analyzed and no Semantic DNA was
                 generated; the fields above illustrate the intended structure.
+            </p>
+        </section>
+
+        <section class="panel" aria-labelledby="reconstruct-heading">
+            <h2 class="panel__heading" id="reconstruct-heading">Reconstruct</h2>
+            <p>
+                Regenerate a text document from this semantic memory. The result is a new,
+                semantically equivalent artifact — <strong>not</strong> a byte-for-byte copy
+                of the original.
+            </p>
+
+            <form th:action="@{'/reconstruction/' + ${file.objectId}}" method="post">
+                <button type="submit" class="button button--primary">
+                    Reconstruct this object
+                </button>
+            </form>
+
+            <p class="hint">
+                Reconstruction is refused if the semantic representation cannot support a
+                faithful result, rather than inventing content to fill the gap.
             </p>
         </section>
 

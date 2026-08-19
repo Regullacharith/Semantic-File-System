@@ -2,7 +2,6 @@
  * SFS user interface stylesheet.
  */
 
-
 :root {
     --colour-bg: #f7f7f8;
     --colour-surface: #ffffff;
@@ -510,7 +509,7 @@ a.app-nav__link:focus {
     font-size: 0.9rem;
 }
 
-/* ----------------------------------------------------------- evidence */
+/* ---------------------------------------------------------- evidence */
 
 .evidence {
     margin-top: var(--space-sm);
@@ -717,4 +716,63 @@ a.app-nav__link:focus {
 .hint--strong {
     color: #8a2b2b;
     font-weight: 500;
+}
+
+/* -------------------------------------------------- verification findings */
+
+.finding-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.finding {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--colour-border);
+    font-size: 0.88rem;
+}
+
+.finding:last-child {
+    border-bottom: none;
+}
+
+.finding__constraint {
+    min-width: 10rem;
+    font-weight: 600;
+}
+
+.finding__detail {
+    flex: 1;
+    min-width: 14rem;
+    color: var(--colour-text-muted);
+}
+
+.finding--violation .finding__detail {
+    color: #8a2b2b;
+}
+
+/* Job and finding status badges. */
+.status-badge--completed,
+.status-badge--satisfied {
+    background: #eef7ee;
+    border-color: #86b586;
+}
+
+.status-badge--rejected,
+.status-badge--violation,
+.status-badge--failed {
+    background: #fdeeee;
+    border-color: #d08b8b;
+    color: #8a2b2b;
+}
+
+.status-badge--warning,
+.status-badge--queued,
+.status-badge--running {
+    background: var(--colour-notice-bg);
+    border-color: var(--colour-notice-border);
 }
