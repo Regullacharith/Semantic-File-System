@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #objects-content})}"
+      lang="en">
+
+<head>
+    <title>Objects</title>
+</head>
+
+<body>
+
+<div id="objects-content">
+
+    <h1 class="page-title">Objects</h1>
+
+    <p class="page-lead">
+        Every object known to the system, identified by its stable Object ID. Select one to
+        inspect its Semantic DNA. Memorized objects have no raw file left; their semantic
+        memory remains fully intact.
+    </p>
+
+    <p th:if="${#lists.isEmpty(objects)}" class="empty-state">
+        No objects are registered yet.
+    </p>
+
+    <table th:unless="${#lists.isEmpty(objects)}" class="data-table">
+        <caption class="visually-hidden">Registered objects</caption>
+        <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Object ID</th>
+            <th scope="col">Status</th>
+            <th scope="col">Registered</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="object : ${objects}"
+            th:classappend="${object.rawDataRemoved} ? 'row--memorized' : ''">
+
+            <td th:text="${object.displayName}">name.txt</td>
+
+            <td><code class="object-id" th:text="${object.objectId}">id</code></td>
+
+            <td>
+                <span class="status-badge"
+                      th:classappend="'status-badge--' + ${#strings.toLowerCase(object.statusLabel)}"
+                      th:text="${object.statusLabel}"
+                      th:title="${object.statusDescription}">Status</span>
+            </td>
+
+            <td th:text="${object.registeredAt}">—</td>
+
+            <td>
+                <a th:href="@{'/objects/' + ${object.objectId}}" class="button">Inspect</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>

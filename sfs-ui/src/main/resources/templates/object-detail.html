@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<!--/*
+    Semantic DNA inspection for one object.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #object-content})}"
+      lang="en">
+
+<head>
+    <title>Object</title>
+</head>
+
+<body>
+
+<div id="object-content">
+
+    <p class="breadcrumb"><a th:href="@{/objects}">← All objects</a></p>
+
+    <h1 class="page-title" th:text="${file.displayName}">name.txt</h1>
+
+    <section class="panel" aria-labelledby="identity-heading">
+        <h2 class="panel__heading" id="identity-heading">Identity</h2>
+        <dl class="detail-grid">
+            <dt>Object ID</dt>
+            <dd><code class="object-id" th:text="${file.objectId}">id</code></dd>
+
+            <dt>Status</dt>
+            <dd>
+                <span class="status-badge"
+                      th:classappend="'status-badge--' + ${#strings.toLowerCase(file.statusLabel)}"
+                      th:text="${file.statusLabel}">Status</span>
+                <span class="hint hint--inline" th:text="${file.statusDescription}">desc</span>
+            </dd>
+
+            <dt>Original size</dt>
+            <dd th:text="${file.formattedSize}">0 B</dd>
+
+            <dt>Registered</dt>
+            <dd th:text="${file.registeredAt}">—</dd>
+
+            <dt>Analyzed</dt>
+            <dd th:text="${file.analyzedAt}">—</dd>
+        </dl>
+
+        <p th:if="${file.rawDataRemoved}" class="alert alert--success" role="status">
+            The raw file has been deleted. Everything below is what SFS retained.
+        </p>
+    </section>
+
+    <section th:unless="${hasDna}" class="panel panel--notice">
+        <h2 class="panel__heading">No Semantic DNA yet</h2>
+        <p>
+            This object has been registered but not analyzed, so no semantic representation
+            exists. Run analysis from the Files screen.
+        </p>
+    </section>
+
+    <div th:if="${hasDna}">
+
+        <section class="panel" aria-labelledby="summary-heading">
+            <h2 class="panel__heading" id="summary-heading">Summary</h2>
+            <p th:text="${dna.summary}">Summary</p>
+            <dl class="detail-grid">
+                <dt>Schema version</dt>
+                <dd th:text="${dna.schemaVersion}">v</dd>
+                <dt>DNA version</dt>
+                <dd th:text="${dna.dnaVersion}">1</dd>
+                <dt>Analyzer</dt>
+                <dd th:text="${dna.fidelity.analyzerVersion}">analyzer</dd>
+            </dl>
+        </section>
+
+        <section th:if="${dna.hasProtectedReferences()}"
+                 class="panel panel--notice" aria-labelledby="protected-heading">
+            <h2 class="panel__heading" id="protected-heading">Protected values</h2>
+            <p>
+                This document contains sensitive values. They are held outside the Semantic
+                DNA as protected references and are <strong>never displayed here</strong>.
+            </p>
+
+            <ul class="protected-list">
+                <li th:each="ref : ${dna.protectedReferences}" class="protected-item">
+                    <div class="protected-item__header">
+                        <span class="status-badge" th:text="${ref.sensitiveType.label}">Type</span>
+                        <code class="object-id" th:text="${ref.referenceId}">ref</code>
+                    </div>
+                    <p class="protected-item__role" th:text="${ref.semanticRole}">Role</p>
+                    <p class="hint" th:text="'Location: ' + ${ref.location}">Location</p>
+
+                    <p th:if="${ref.resolvable}" class="hint">
+                        Policy permits an authorized user to resolve the exact value from the
+                        encrypted secure store.
+                    </p>
+                    <p th:unless="${ref.resolvable}" class="hint hint--strong">
+                        Non-reversible by policy. The exact value cannot be recovered by
+                        anyone, including reconstruction.
+                    </p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="concepts-heading">
+            <h2 class="panel__heading" id="concepts-heading">Concepts and topics</h2>
+            <div class="tag-group">
+                <span th:each="concept : ${dna.concepts}" class="tag" th:text="${concept}">c</span>
+                <span th:each="topic : ${dna.topics}" class="tag tag--topic" th:text="${topic}">t</span>
+            </div>
+        </section>
+
+        <section class="panel" aria-labelledby="entities-heading">
+            <h2 class="panel__heading" id="entities-heading">Entities</h2>
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th scope="col">Entity</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Mentions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="entity : ${dna.entities}">
+                    <td th:text="${entity.name}">name</td>
+                    <td th:text="${entity.type}">type</td>
+                    <td th:text="${entity.mentions}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="panel" aria-labelledby="facts-heading">
+            <h2 class="panel__heading" id="facts-heading">Facts</h2>
+            <ul class="fact-list">
+                <li th:each="fact : ${dna.facts}"
+                    th:classappend="${fact.critical} ? 'fact--critical' : ''"
+                    class="fact">
+                    <span th:if="${fact.critical}" class="status-badge status-badge--critical">critical</span>
+                    <span th:text="${fact.statement}">statement</span>
+                    <span class="hint hint--inline"
+                          th:text="${fact.confidencePercent()} + '% confidence'">0%</span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="relationships-heading">
+            <h2 class="panel__heading" id="relationships-heading">Relationships</h2>
+            <ul class="relationship-list">
+                <li th:each="rel : ${dna.relationships}" class="relationship">
+                    <span class="relationship__subject" th:text="${rel.subject}">a</span>
+                    <span class="relationship__type" th:text="${rel.type}">rel</span>
+                    <span class="relationship__object" th:text="${rel.object}">b</span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="structure-heading">
+            <h2 class="panel__heading" id="structure-heading">Document structure</h2>
+            <ul class="structure-list">
+                <li th:each="node : ${dna.structure}"
+                    th:class="'structure-node structure-node--level' + ${node.level}"
+                    th:text="${node.heading}">Heading</li>
+            </ul>
+        </section>
+        
+        <section class="panel" aria-labelledby="fidelity-heading">
+            <h2 class="panel__heading" id="fidelity-heading">Representation quality</h2>
+            <dl class="detail-grid">
+                <dt>Extraction confidence</dt>
+                <dd th:text="${dna.fidelity.extractionConfidencePercent()} + '%'">0%</dd>
+
+                <dt>Structural completeness</dt>
+                <dd th:text="${dna.fidelity.structuralCompletenessPercent()} + '%'">0%</dd>
+
+                <dt>Embedding</dt>
+                <dd th:if="${dna.hasEmbedding()}"
+                    th:text="${dna.embeddingDimensions} + ' dimensions (not shown)'">0</dd>
+                <dd th:unless="${dna.hasEmbedding()}">Not generated</dd>
+            </dl>
+
+            <p class="hint">
+                These describe how complete and confident the <em>representation</em> is at
+                analysis time. They are not reconstruction fidelity, which can only be measured
+                by comparing a reconstructed artifact against an original.
+            </p>
+        </section>
+
+        <section class="panel panel--notice">
+            <h2 class="panel__heading">About this record</h2>
+            <p>
+                This build uses fixture data. No document was analyzed and no Semantic DNA was
+                generated; the fields above illustrate the intended structure.
+            </p>
+        </section>
+
+    </div>
+
+</div>
+
+</body>
+</html>
