@@ -1,14 +1,16 @@
 # Semantic File System (SFS)
+
+**Version:** V1 
+
 The core idea is to make a file more than just a collection of raw bytes. SFS creates a semantic representation of the file—what it contains, what it means, how its information is related, and how its structure can be reconstructed.
-For example, suppose you have:
+For example, suppose you have `project.txt`:
 
-project.txt
-
-
+```
 "This project develops an AI-powered database..."
+```
 
 Instead of only storing the raw text, SFS creates something conceptually like:
-
+```
 Object ID
    │
    ├── File identity
@@ -27,11 +29,12 @@ Object ID
              │
              ▼
         Semantic DNA
+```
 
 That Semantic DNA is stored in the Memory Database.
 
 If the original raw file is later intentionally deleted, SFS is not trying to recover the original bytes from the disk. Instead:
-
+```
 Deleted raw file
        ↓
 Semantic memory remains
@@ -47,7 +50,7 @@ Reconstruction Rules
 Reconstruction Engine
        ↓
 New reconstructed file
-
+```
 The reconstructed file does not have to be byte-for-byte identical to the original. Your V1 design focuses on:
 
 Semantic similarity — does it mean the same thing?
@@ -214,15 +217,15 @@ live file → register → background analysis → Semantic DNA + Rules + securi
 | | |
 |---|---|
 | **Current milestone** | M01 — User / Interface Layer |
-| **Completed task**	 | Object / Semantic DNA view |
+| **Completed task**	 |reconstruction flow|
 | **Automated tests** | |
 
 **What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
 application bootstrap, explicit module boundaries enforced by an executable architecture test,
 the lightweight UI shell — base layout and primary navigation covering all seven Milestone 01
-destinations — plus four working screens: the dashboard, Files, Semantic Search and the
-Object / Semantic DNA inspector. The remaining three destinations render as visibly disabled
-items rather than links, so no navigation action produces a silent 404.
+destinations — plus five working screens: the dashboard, Files, Semantic Search, the
+Object / Semantic DNA inspector and Reconstruction. The remaining two destinations render as
+visibly disabled items rather than links, so no navigation action produces a silent 404.
 
 The Files screen imports a UTF-8 text file, assigns an Object ID, requests analysis and
 performs semantic deletion. It is backed by **`MockFileService`, an in-memory stand-in** — not
@@ -235,8 +238,7 @@ The Search screen finds records by meaning, shows the evidence behind each match
 exact Object ID directly instead of by similarity, and keeps memorized records findable after
 their raw bytes are gone. It is backed by **`MockSearchService`** — keyword overlap against a
 fixed corpus, with **no embeddings, no vector index and no reranking**. Search deliberately
-offers no reconstruction control: search returns Object IDs, and reconstruction is a separate
-explicit action.
+offers no reconstruction control: search returns Object IDs, and reconstruction is a separate.
 
 The Objects screen inspects a record's Semantic DNA: summary, concepts, topics, entities,
 facts, relationships, document structure and representation quality. It shows the defining SFS
@@ -245,7 +247,15 @@ semantic memory. Sensitive values are rendered as **protected references describ
 role**, never by value; the contract type has no field capable of holding a plaintext secret,
 and passwords are marked non-reversible rather than offered for retrieval. Embedding
 dimensionality is reported but the vector itself is never rendered. Backed by
-**`MockSemanticRecordService`** — hand-written fixtures..
+**`MockSemanticRecordService`** — hand-written fixtures.
+Reconstruction closes the V1 loop: a single explicit click on an object regenerates a text
+artifact from its semantic memory, including for an object whose raw file has been deleted.
+Every job records the Semantic DNA, Reconstruction Rules and model versions that produced it,
+and runs verification that can **reject** the output — a document holding protected values is
+refused rather than having its withheld secrets invented. The downloaded file carries a header
+declaring it a semantic reconstruction and **not** the original. Backed by
+**`MockReconstructionService`**, which formats Semantic DNA deterministically; there is **no
+reconstruction model** and nothing generates language.
 
 **What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database,
 Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction
@@ -265,8 +275,8 @@ M01 — User / Interface Layer
  ├── 01.2  File import / analyze / delete controls              ✅ complete
  ├── 01.3  Semantic Search view                                 ✅ complete
  ├── 01.4  Object / Semantic DNA view                           ✅ complete
- ├── 01.5  Single-click reconstruction flow                     ◀ next
- ├── 01.6  Evaluation / fidelity view
+ ├── 01.5  reconstruction flow                                  ✅ complete
+ ├── 01.6  Evaluation / fidelity view                           ◀  next
  ├── 01.7  Security / policy settings
  └── 01.8  Milestone integration tests + acceptance report
 ```
@@ -332,7 +342,7 @@ mvn -pl sfs-ui spring-boot:run
 
 Then open <http://localhost:8080>.
 
-> The dashboard, Files, Search and Objects screens are implemented. The other three navigation destinations are
+> The dashboard, Files, Search, Objects and Reconstruction screens are implemented. The other two navigation destinations are
 > deliberately not clickable until their task lands, so no link produces a 404.
 >
 > The application starts with the `mock` profile active, which supplies in-memory stand-ins
@@ -370,7 +380,8 @@ sfs/
 │   └── src/main/java/com/sfs/contracts/
 │       ├── file/           # FileService, FileSummary, FileStatus, requests, results
 │       ├── search/         # SearchService, SearchQuery, SearchResult, evidence
-│       └── semantic/       # SemanticDnaView, ProtectedReferenceView, record service
+│       ├── semantic/       # SemanticDnaView, ProtectedReferenceView, record service
+│       └── reconstruction/ # ReconstructionService, job, artifact, status
 │
 └── sfs-ui/                 # server-rendered web UI
     ├── src/main/java/com/sfs/ui/
@@ -470,12 +481,13 @@ Reconstruction quality is decomposed rather than reported as a single score, so 
 - Search results are not paginated and cannot be filtered by status or date.
 - Semantic DNA shown on the Objects screen is hand-written fixture data. No document is analysed, and confidence figures are illustrative rather than measured.
 - Object detail is read-only by design. Semantic DNA is produced by the Semantic Engine and amended through the improvement loop, never edited through the interface.
+- Reconstruction formats Semantic DNA deterministically into sections. There is no reconstruction model, no language generation and no measured fidelity; the artifact is structured text, not prose.
+- Reconstruction jobs complete synchronously and are held in memory. Real reconstruction is asynchronous; the job status machinery exists so the interface is already shaped for it.
 - `sfs-core` and `sfs-contracts` contain package documentation only.
 - Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, `aria-current`, `aria-disabled`) and has not been screen-reader audited.
 - `spring-boot-starter-web` is deprecated in Spring Boot 4 in favour of `spring-boot-starter-webmvc`; the rename is pending a dedicated task.
-- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit in .
+- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit.
 - Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
-
 ---
 
 ## License
