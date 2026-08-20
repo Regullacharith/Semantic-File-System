@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #error-content})}"
+      lang="en">
+
+<head>
+    <title>Error</title>
+</head>
+
+<body>
+
+<div id="error-content">
+
+    <section class="page-intro">
+        <p class="error-status" th:text="${error.status}">404</p>
+        <h1 class="page-title" th:text="${error.title}">Page not found</h1>
+        <p class="page-lead" th:text="${error.summary}">There is nothing at this address.</p>
+    </section>
+
+    <section class="panel panel--error">
+        <p class="error-guidance" th:text="${error.guidance}">Check the address and try again.</p>
+
+        <p class="error-path" th:if="${error.hasRequestedPath()}">
+            <span class="error-path__label">Requested address</span>
+            <code class="error-path__value" th:text="${error.requestedPath}">/unknown</code>
+        </p>
+
+        <p class="error-assurance" th:unless="${error.serverError}">
+            Nothing was imported, analyzed, reconstructed or deleted by this request.
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2 class="panel__title">Go to a working page</h2>
+        <ul class="error-links">
+            <li th:each="item : ${page.navigation}" th:if="${item.available}">
+                <a th:href="@{${item.path}}"
+                   th:text="${item.label}"
+                   th:title="${item.description}"
+                   class="error-links__link">Page</a>
+                <span class="error-links__hint" th:text="${item.description}">Description</span>
+            </li>
+        </ul>
+    </section>
+
+</div>
+
+</body>
+</html>

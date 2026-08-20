@@ -863,3 +863,66 @@ a.app-nav__link:focus {
 .row--locked {
     background: var(--colour-bg);
 }
+
+.error-status {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0 0 var(--space-xs);
+    color: var(--colour-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.panel--error {
+    border-left: 4px solid var(--colour-notice-border);
+    background: var(--colour-notice-bg);
+}
+
+.error-guidance {
+    margin: 0 0 var(--space-md);
+}
+
+.error-path {
+    margin: 0 0 var(--space-md);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    align-items: baseline;
+}
+
+.error-path__label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--colour-text-muted);
+}
+
+.error-path__value {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 0.9rem;
+    padding: 0.15rem var(--space-xs);
+    background: var(--colour-surface);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    word-break: break-all;
+}
+
+.error-assurance {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--colour-text-muted);
+}
+
+.error-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-md);
+}
+
+.error-links__hint {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--colour-text-muted);
+}
