@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<!--/*
+    Security and policy settings.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #settings-content})}"
+      lang="en">
+
+<head>
+    <title>Settings</title>
+</head>
+
+<body>
+
+<div id="settings-content">
+
+    <h1 class="page-title">Security and privacy</h1>
+
+    <p class="page-lead">
+        SFS separates understanding a document from retaining its sensitive values. A detected
+        secret is replaced by a protected reference describing its role; the exact value is
+        either discarded or held in an encrypted store, never placed in ordinary semantic
+        memory.
+    </p>
+
+    <section class="panel" aria-labelledby="guarantees-heading">
+        <h2 class="panel__heading" id="guarantees-heading">Enforced guarantees</h2>
+
+        <ul class="guarantee-list">
+            <li class="guarantee">
+                <span class="status-badge status-badge--satisfied">Enforced</span>
+                <span>Embeddings are never generated from plaintext secrets.</span>
+            </li>
+            <li class="guarantee">
+                <span class="status-badge status-badge--satisfied">Enforced</span>
+                <span>Logs never contain plaintext secrets.</span>
+            </li>
+            <li class="guarantee">
+                <span class="status-badge status-badge--satisfied">Enforced</span>
+                <span>Unrestricted Semantic DNA never contains plaintext secrets.</span>
+            </li>
+            <li class="guarantee">
+                <span class="status-badge status-badge--satisfied">Enforced</span>
+                <span>Resolving a protected reference always requires authorization.</span>
+            </li>
+        </ul>
+
+        <p class="hint">
+            These are architectural invariants, not preferences. They are reported here rather
+            than offered as options because the system is not permitted to operate without
+            them.
+        </p>
+    </section>
+
+    <section class="panel" aria-labelledby="policies-heading">
+        <h2 class="panel__heading" id="policies-heading">Handling by sensitive type</h2>
+
+        <table class="data-table">
+            <caption class="visually-hidden">Handling policy per sensitive value type</caption>
+            <thead>
+            <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Policy</th>
+                <th scope="col">Recoverable</th>
+                <th scope="col">Rationale</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="policy : ${settings.typePolicies}"
+                th:classappend="${policy.locked} ? 'row--locked' : ''">
+
+                <td>
+                    <span th:text="${policy.sensitiveType.label}">Type</span>
+                    <span th:if="${policy.locked}"
+                          class="status-badge"
+                          title="This policy is fixed and cannot be reconfigured">locked</span>
+                </td>
+
+                <td>
+                    <span th:text="${policy.handling.label}">Policy</span>
+                </td>
+
+                <td>
+                    <span th:if="${policy.handling.reversible}"
+                          class="status-badge status-badge--warning">Under authorization</span>
+                    <span th:unless="${policy.handling.reversible}"
+                          class="status-badge status-badge--satisfied">Never</span>
+                </td>
+
+                <td class="hint" th:text="${policy.rationale}">Rationale</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <p class="hint hint--strong">
+            Passwords are fixed to a non-reversible policy and cannot be configured otherwise.
+            A password's exact value has no legitimate reconstruction use, so retaining it in
+            recoverable form would add risk without benefit.
+        </p>
+    </section>
+
+    <section class="panel" aria-labelledby="keys-heading">
+        <h2 class="panel__heading" id="keys-heading">Key management</h2>
+        <p th:text="${settings.keyStorageDescription}">Key storage</p>
+    </section>
+
+    <section class="panel" aria-labelledby="audit-heading">
+        <h2 class="panel__heading" id="audit-heading">Recent security events</h2>
+
+        <p th:if="${#lists.isEmpty(settings.auditEvents)}" class="empty-state">
+            No security events have been recorded.
+        </p>
+
+        <ul th:unless="${#lists.isEmpty(settings.auditEvents)}" class="finding-list">
+            <li th:each="event : ${settings.auditEvents}"
+                th:class="'finding finding--' + (${event.permitted} ? 'satisfied' : 'violation')">
+                <span class="status-badge"
+                      th:classappend="${event.permitted}
+                                      ? 'status-badge--satisfied' : 'status-badge--violation'"
+                      th:text="${event.permitted} ? 'Allowed' : 'Refused'">Outcome</span>
+                <span class="finding__constraint" th:text="${event.eventType}">Type</span>
+                <span class="finding__detail" th:text="${event.detail}">Detail</span>
+                <span class="hint hint--inline" th:text="${event.timestamp}">time</span>
+            </li>
+        </ul>
+
+        <p class="hint">
+            Audit entries record what happened and which protected reference was involved. They
+            never contain the value itself.
+        </p>
+    </section>
+
+    <section class="panel panel--notice">
+        <h2 class="panel__heading">This screen is read-only</h2>
+        <p>
+            Security policy cannot be changed here. Editing a policy is a privileged, audited
+            operation that arrives with the Security and Privacy subsystem. Offering an edit
+            control before the change could be enforced and recorded would imply a protection
+            that does not exist.
+        </p>
+        <p>
+            This build reports intended configuration only. <strong>No detector, policy engine,
+            encrypted store, key management or audit trail is implemented yet.</strong>
+        </p>
+    </section>
+
+</div>
+
+</body>
+</html>
