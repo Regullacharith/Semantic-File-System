@@ -217,16 +217,15 @@ live file → register → background analysis → Semantic DNA + Rules + securi
 | | |
 |---|---|
 | **Current milestone** | M01 — User / Interface Layer |
-| **Completed task**	 |evaluation/fidelity view|
+| **Completed task**	 |Security / policy settings|
 | **Automated tests** | |
 
 **What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
 application bootstrap, explicit module boundaries enforced by an executable architecture test,
-the UI shell — base layout and primary navigation covering all seven Milestone 01
-destinations — plus six working screens: the dashboard, Files, Semantic Search, the
-Object / Semantic DNA inspector, Reconstruction and Evaluation. The one remaining destination
-renders as a visibly disabled item rather than a link, so no navigation action produces a
-silent 404.
+the lightweight UI shell — base layout and primary navigation covering all seven Milestone 01
+destinations — and **all seven are now implemented**: the dashboard, Files, Semantic Search,
+the Object / Semantic DNA inspector, Reconstruction, Evaluation and Security settings. No
+navigation item renders as "planned" any more.
 
 The Files screen imports a UTF-8 text file, assigns an Object ID, requests analysis and
 performs semantic deletion. It is backed by **`MockFileService`, an in-memory stand-in** — not
@@ -240,7 +239,7 @@ exact Object ID directly instead of by similarity, and keeps memorized records f
 their raw bytes are gone. It is backed by **`MockSearchService`** — keyword overlap against a
 fixed corpus, with **no embeddings, no vector index and no reranking**. Search deliberately
 offers no reconstruction control: search returns Object IDs, and reconstruction is a separate
-explicit action arriving in Task .
+explicit action.
 
 The Objects screen inspects a record's Semantic DNA: summary, concepts, topics, entities,
 facts, relationships, document structure and representation quality. It shows the defining SFS
@@ -269,6 +268,15 @@ compare against, so the screen reports *Not measurable* and shows **no score at 
 than estimating one. Backed by **`MockEvaluationService`**: nothing is measured, no text is
 compared, and the figures are fixed illustrative constants.
 
+The Settings screen reports the security and privacy configuration: the handling policy for
+each sensitive category, where encryption keys live, and an audit trail of security events.
+Four protections are reported as **enforced invariants rather than options** — secrets never
+reach embeddings, logs or unrestricted Semantic DNA, and resolving a protected reference
+always requires authorization; `SecuritySettingsView` refuses to be constructed with any of
+them disabled. Passwords are fixed to a non-reversible policy by the type system:
+`SensitiveTypePolicy` throws if a password is paired with reversible handling, so the rule
+cannot be relaxed through a template, a form or a crafted request. The screen is read-only .
+
 **What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database,
 Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction
 Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. **No semantic
@@ -289,8 +297,8 @@ M01 — User / Interface Layer
  ├── 01.4  Object / Semantic DNA view                           ✅ complete
  ├── 01.5  reconstruction flow                                  ✅ complete
  ├── 01.6  Evaluation / fidelity view                           ✅ complete
- ├── 01.7  Security / policy settings                            ◀ next
- └── 01.8  Milestone integration tests + acceptance report
+ ├── 01.7  Security / policy settings                           ✅ complete
+ └── 01.8  Milestone integration tests + acceptance report      ◀ next
 ```
 Every M01 view is built against **mock services**. Real backend services arrive from M02
 onward, exactly as the milestone specification permits: *"API contracts; can begin with mocks."*
@@ -354,8 +362,7 @@ mvn -pl sfs-ui spring-boot:run
 
 Then open <http://localhost:8080>.
 
-> The dashboard, Files, Search, Objects, Reconstruction and Evaluation screens are implemented. The one remaining navigation destination is
-> deliberately not clickable until their task lands, so no link produces a 404.
+> All screens are implemented and reachable.
 >
 > The application starts with the `mock` profile active, which supplies in-memory stand-ins
 > for backend services that do not exist yet. Override with `SFS_PROFILE` when real services
@@ -394,7 +401,8 @@ sfs/
 │       ├── search/         # SearchService, SearchQuery, SearchResult, evidence
 │       ├── semantic/       # SemanticDnaView, ProtectedReferenceView, record service
 │       ├── reconstruction/ # ReconstructionService, job, artifact, status
-│       └── evaluation/     # EvaluationService, fidelity report, dimensions
+│       ├── evaluation/     # EvaluationService, fidelity report, dimensions
+│       └── security/       # SecuritySettingsService, policies, audit events
 │
 └── sfs-ui/                 # server-rendered web UI
     ├── src/main/java/com/sfs/ui/
@@ -498,6 +506,8 @@ Reconstruction quality is decomposed rather than reported as a single score, so 
 - Reconstruction jobs complete synchronously and are held in memory. Real reconstruction is asynchronous; the job status machinery exists so the interface is already shaped for it.
 - **No fidelity figure in this build is a measurement.** The mock evaluator compares nothing; its scores are fixed constants attached to fixture data and must never be quoted as evidence about reconstruction quality.
 - The 80% concern threshold on correctness-critical dimensions is a display cue only. It is not an acceptance criterion and implies no target.
+- **No security control is enforced yet.** The Settings screen reports intended configuration; there is no detector, policy engine, encrypted store, key management or audit trail behind it..
+- Security settings are read-only. Editing a policy requires authorization and auditing that do not exist yet, and a control implying otherwise would be misleading.
 - `sfs-core` and `sfs-contracts` contain package documentation only.
 - Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, `aria-current`, `aria-disabled`) and has not been screen-reader audited.
 - `spring-boot-starter-web` is deprecated in Spring Boot 4 in favour of `spring-boot-starter-webmvc`; the rename is pending a dedicated task.
