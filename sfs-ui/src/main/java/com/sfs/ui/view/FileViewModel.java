@@ -8,21 +8,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
-/**
- * Presentation projection of a {@link FileSummary}.
- *
- * @param objectId       stable logical identity
- * @param displayName    file name shown to the user
- * @param status         lifecycle status
- * @param statusLabel    human-readable status
- * @param statusDescription explanatory text for the status
- * @param formattedSize  human-readable original size
- * @param registeredAt   formatted registration timestamp
- * @param analyzedAt     formatted analysis timestamp, or a placeholder when not analyzed
- * @param rawDataRemoved whether the raw bytes are gone while semantic memory persists
- * @param canAnalyze     whether the analyze action should be offered
- * @param canDelete      whether the semantic-deletion action should be offered
- */
 public record FileViewModel(
         String objectId,
         String displayName,
@@ -41,9 +26,6 @@ public record FileViewModel(
 
     private static final String NOT_APPLICABLE = "—";
 
-    /**
-     * Projects a contract summary into display state.
-     */
     public static FileViewModel from(FileSummary summary) {
         Objects.requireNonNull(summary, "summary must not be null");
 
@@ -61,9 +43,6 @@ public record FileViewModel(
                 summary.status().allowsSemanticDeletion());
     }
 
-    /**
-     * Formats a byte count using binary units.
-     */
     static String formatSize(long bytes) {
         if (bytes < 1024) {
             return bytes + " B";
@@ -74,9 +53,6 @@ public record FileViewModel(
         return "%.1f MB".formatted(bytes / (1024.0 * 1024.0));
     }
 
-    /**
-     * Formats a timestamp, or returns a placeholder when absent.
-     */
     static String formatTimestamp(Instant instant) {
         return instant == null ? NOT_APPLICABLE : TIMESTAMP_FORMAT.format(instant);
     }

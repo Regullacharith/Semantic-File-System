@@ -755,7 +755,6 @@ a.app-nav__link:focus {
     color: #8a2b2b;
 }
 
-/* Job and finding status badges. */
 .status-badge--completed,
 .status-badge--satisfied {
     background: #eef7ee;
@@ -775,4 +774,66 @@ a.app-nav__link:focus {
 .status-badge--running {
     background: var(--colour-notice-bg);
     border-color: var(--colour-notice-border);
+}
+
+/* ------------------------------------------------------- fidelity scores */
+
+.score-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.score-row {
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--colour-border);
+}
+
+.score-row:last-child {
+    border-bottom: none;
+}
+
+.score-row__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.score-row__label {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.score-row__value {
+    margin-left: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.95rem;
+}
+
+.score-large {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.score-bar {
+    height: 8px;
+    background: var(--colour-bg);
+    border: 1px solid var(--colour-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.score-bar__fill {
+    height: 100%;
+    background: var(--colour-accent);
+}
+
+.score-bar__fill--critical {
+    background: #8a6d1f;
+}
+
+.score-row .hint {
+    margin-top: var(--space-xs);
 }

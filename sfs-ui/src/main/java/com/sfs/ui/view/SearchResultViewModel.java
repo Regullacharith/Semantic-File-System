@@ -6,17 +6,6 @@ import com.sfs.contracts.search.SearchResult;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Presentation projection of a search result.
- * 
- * @param objectId       stable logical identity
- * @param displayName    original file name
- * @param statusLabel    human-readable lifecycle status
- * @param memorized      whether the raw bytes have been removed
- * @param relevancePercent relevance as a whole percentage
- * @param summary        short description of the record
- * @param evidence       why this record matched
- */
 public record SearchResultViewModel(
         String objectId,
         String displayName,

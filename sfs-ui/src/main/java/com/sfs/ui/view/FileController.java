@@ -22,9 +22,6 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * File import, analyze and semantic-deletion controls.
- */
 @Controller
 public class FileController {
 
@@ -38,7 +35,6 @@ public class FileController {
     private static final String ATTR_RESULT_MESSAGE = "resultMessage";
     private static final String ATTR_RESULT_SUCCESS = "resultSuccess";
 
-    /** Guard against oversized uploads. . */
     private static final long MAX_UPLOAD_BYTES = 5L * 1024 * 1024;
 
     private final FileService fileService;
@@ -48,9 +44,6 @@ public class FileController {
         this.fileService = fileService;
     }
 
-    /**
-     * Renders the file list with import and per-file action controls.
-     */
     @GetMapping("/files")
     public String listFiles(Model model) {
         List<FileViewModel> files = fileService.listFiles().stream()
@@ -63,9 +56,6 @@ public class FileController {
         return VIEW_FILES;
     }
 
-    /**
-     * Imports an uploaded text file.
-     */
     @PostMapping("/files/import")
     public String importFile(@RequestParam("file") MultipartFile upload,
                              RedirectAttributes redirectAttributes) {
@@ -91,11 +81,9 @@ public class FileController {
         try {
             content = decodeUtf8(upload.getBytes());
         } catch (MalformedInputException e) {
-            // than a misclassification as text.
             return redirectWith(redirectAttributes, FileOperationResult.failure(
                     "The file is not valid UTF-8 text. V1 supports text files only."));
         } catch (IOException e) {
-            // Log the failure without the file's contents.
             log.warn("Failed to read uploaded file '{}': {}",
                     sanitizeForLog(originalName), e.getClass().getSimpleName());
             return redirectWith(redirectAttributes,
@@ -107,34 +95,24 @@ public class FileController {
             result = fileService.importFile(
                     new FileImportRequest(originalName, content, upload.getContentType()));
         } catch (IllegalArgumentException e) {
-            // Contract validation rejected the request, e.g. a path separator in the name.
             result = FileOperationResult.failure("Import rejected: " + e.getMessage());
         }
 
         return redirectWith(redirectAttributes, result);
     }
 
-    /**
-     * Requests semantic analysis for a file.
-     */
     @PostMapping("/files/{objectId}/analyze")
     public String analyzeFile(@PathVariable String objectId,
                               RedirectAttributes redirectAttributes) {
         return redirectWith(redirectAttributes, fileService.requestAnalysis(objectId));
     }
 
-    /**
-     * Requests semantic deletion: removal of raw bytes, retention of the Semantic Record.
-     */
     @PostMapping("/files/{objectId}/delete-raw")
     public String deleteRawData(@PathVariable String objectId,
                                 RedirectAttributes redirectAttributes) {
         return redirectWith(redirectAttributes, fileService.requestSemanticDeletion(objectId));
     }
 
-    /**
-     * Attaches the outcome as a flash attribute and redirects.
-     */
     private String redirectWith(RedirectAttributes redirectAttributes, FileOperationResult result) {
         redirectAttributes.addFlashAttribute(ATTR_RESULT_MESSAGE, result.message());
         redirectAttributes.addFlashAttribute(ATTR_RESULT_SUCCESS, result.successful());
@@ -146,9 +124,6 @@ public class FileController {
         return decoder.decode(java.nio.ByteBuffer.wrap(bytes)).toString();
     }
 
-    /**
-     * Removes control characters from a value before logging it.
-     */
     private static String sanitizeForLog(String value) {
         return value.replaceAll("[\\p{Cntrl}]", "_");
     }

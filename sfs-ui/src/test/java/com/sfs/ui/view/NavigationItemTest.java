@@ -20,7 +20,7 @@ class NavigationItemTest {
     }
 
     @Test
-    @DisplayName("marks the dashboard, files, search, objects and reconstruction screens as implemented")
+    @DisplayName("marks every screen delivered so far as implemented")
     void implementedDestinationsAreAvailable() {
         assertThat(NavigationItem.all())
                 .filteredOn(NavigationItem::isAvailable)
@@ -29,16 +29,15 @@ class NavigationItemTest {
                         NavigationItem.FILES,
                         NavigationItem.SEARCH,
                         NavigationItem.OBJECTS,
-                        NavigationItem.RECONSTRUCTION);
+                        NavigationItem.RECONSTRUCTION,
+                        NavigationItem.EVALUATION);
     }
 
     @Test
     @DisplayName("leaves destinations without a route marked planned")
     void unimplementedDestinationsArePlanned() {
         assertThat(NavigationItem.planned())
-                .containsExactly(
-                        NavigationItem.EVALUATION,
-                        NavigationItem.SETTINGS);
+                .containsExactly(NavigationItem.SETTINGS);
     }
 
     @ParameterizedTest
