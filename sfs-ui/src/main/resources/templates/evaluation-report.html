@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<!--/*
+fidelity report.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #report-content})}"
+      lang="en">
+
+<head>
+    <title>Fidelity report</title>
+</head>
+
+<body>
+
+<div id="report-content">
+
+    <p class="breadcrumb"><a th:href="@{/evaluation}">← All evaluations</a></p>
+
+    <h1 class="page-title">Fidelity report</h1>
+
+    <section th:unless="${evaluation.isAvailable()}" class="panel panel--notice">
+        <h2 class="panel__heading" th:text="${evaluation.status.label}">Not measurable</h2>
+        <p th:text="${evaluation.reason}">Reason</p>
+        <p class="hint hint--strong">
+            No fidelity score is shown, because none was measured. An estimate here would be a
+            claim the system cannot support.
+        </p>
+    </section>
+
+    <div th:if="${evaluation.isAvailable()}">
+
+        <section class="panel" aria-labelledby="subject-heading">
+            <h2 class="panel__heading" id="subject-heading">Subject</h2>
+            <dl class="detail-grid">
+                <dt>Job</dt>
+                <dd>
+                    <a th:href="@{'/reconstruction/job/' + ${evaluation.report.jobId}}">
+                        <code class="object-id" th:text="${evaluation.report.jobId}">job</code>
+                    </a>
+                </dd>
+                <dt>Object</dt>
+                <dd>
+                    <a th:href="@{'/objects/' + ${evaluation.report.objectId}}">
+                        <code class="object-id" th:text="${evaluation.report.objectId}">id</code>
+                    </a>
+                </dd>
+                <dt>Evaluator</dt>
+                <dd><code class="object-id" th:text="${evaluation.report.evaluatorVersion}">v</code></dd>
+            </dl>
+        </section>
+
+        <section class="panel"
+                 th:classappend="${evaluation.report.hasCriticalFactLoss()} ? 'panel--notice' : ''"
+                 aria-labelledby="critical-heading">
+            <h2 class="panel__heading" id="critical-heading">Critical facts</h2>
+
+            <p>
+                <span class="score-large"
+                      th:text="${evaluation.report.criticalFactsPreserved} + ' of '
+                               + ${evaluation.report.criticalFactsTotal}">0 of 0</span>
+                facts marked critical by the Semantic DNA were preserved
+                (<span th:text="${evaluation.report.criticalFactPercent()} + '%'">0%</span>).
+            </p>
+
+            <p th:if="${evaluation.report.hasCriticalFactLoss()}" class="hint hint--strong">
+                At least one critical fact was lost. This is reported on its own and is not
+                folded into the scores below.
+            </p>
+        </section>
+
+        <section class="panel" aria-labelledby="dimensions-heading">
+            <h2 class="panel__heading" id="dimensions-heading">Fidelity by dimension</h2>
+
+            <ul class="score-list">
+                <li th:each="dimension : ${dimensions}" class="score-row">
+                    <div class="score-row__header">
+                        <span class="score-row__label" th:text="${dimension.label}">Dimension</span>
+                        <span class="score-row__value"
+                              th:text="${evaluation.report.percentFor(dimension)} + '%'">0%</span>
+                        <span th:if="${dimension.correctnessCritical
+                                       and evaluation.report.scoreFor(dimension) < concernThreshold}"
+                              class="status-badge status-badge--violation">correctness concern</span>
+                    </div>
+
+                    <div class="score-bar" role="img"
+                         th:attr="aria-label=${dimension.label} + ': '
+                                  + ${evaluation.report.percentFor(dimension)} + ' percent'">
+                        <div class="score-bar__fill"
+                             th:classappend="${dimension.correctnessCritical} ? 'score-bar__fill--critical' : ''"
+                             th:style="'width:' + ${evaluation.report.percentFor(dimension)} + '%'"></div>
+                    </div>
+
+                    <p class="hint" th:text="${dimension.description}">Description</p>
+                </li>
+            </ul>
+
+            <p class="hint hint--strong">
+                These are reported separately and are never combined into a single figure. A
+                high semantic score does not offset a factual loss.
+            </p>
+        </section>
+
+        <section class="panel" aria-labelledby="findings-heading">
+            <h2 class="panel__heading" id="findings-heading">Observations</h2>
+            <ul class="finding-list">
+                <li th:each="finding : ${evaluation.report.findings}"
+                    th:class="'finding finding--' + (${finding.preserved} ? 'satisfied' : 'violation')">
+                    <span class="status-badge"
+                          th:classappend="${finding.preserved}
+                                          ? 'status-badge--satisfied' : 'status-badge--violation'"
+                          th:text="${finding.preserved} ? 'Preserved' : 'Lost'">Status</span>
+                    <span class="finding__constraint" th:text="${finding.dimension.label}">Dimension</span>
+                    <span class="finding__detail" th:text="${finding.detail}">Detail</span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="panel" aria-labelledby="storage-heading">
+            <h2 class="panel__heading" id="storage-heading">Storage and fidelity together</h2>
+            <dl class="detail-grid">
+                <dt>Original size</dt>
+                <dd th:text="${evaluation.report.originalBytes} + ' bytes'">0</dd>
+
+                <dt>Semantic memory</dt>
+                <dd th:text="${evaluation.report.semanticMemoryBytes} + ' bytes'">0</dd>
+            </dl>
+
+            <p class="hint">
+                Storage cost is recorded alongside fidelity so knowledge preservation density
+                can be evaluated. Storage saving on its own would describe compression, which
+                is not what this system is measuring.
+            </p>
+        </section>
+
+        <section class="panel panel--notice">
+            <h2 class="panel__heading">About these numbers</h2>
+            <p>
+                This build uses a mock evaluator. <strong>Nothing was measured</strong>: no text
+                was compared, and the figures above are fixed illustrative constants attached to
+                fixture data. They demonstrate the shape of a fidelity report and are not
+                evidence about this system's reconstruction quality.
+            </p>
+        </section>
+
+    </div>
+
+</div>
+
+</body>
+</html>

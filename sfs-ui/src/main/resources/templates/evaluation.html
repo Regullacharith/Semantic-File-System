@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<!--/*
+    Evaluation list.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: page(~{:: #evaluation-content})}"
+      lang="en">
+
+<head>
+    <title>Evaluation</title>
+</head>
+
+<body>
+
+<div id="evaluation-content">
+
+    <h1 class="page-title">Evaluation</h1>
+
+    <p class="page-lead">
+        Fidelity is the measured difference between an original document and its
+        reconstruction. Semantic, structural and factual quality are reported
+        <strong>separately</strong>, because a reconstruction can read well and still lose a
+        date or a quantity.
+    </p>
+
+    <section class="panel panel--notice">
+        <h2 class="panel__heading">When fidelity cannot be measured</h2>
+        <p>
+            Measuring fidelity requires the original document. Once a file's raw bytes have
+            been deleted there is nothing left to compare against, so no score is produced and
+            <strong>none is estimated</strong>. Those cases appear below as
+            <em>Not measurable</em>.
+        </p>
+    </section>
+
+    <p th:if="${#lists.isEmpty(evaluations)}" class="empty-state">
+        No reconstructions have been evaluated yet.
+    </p>
+
+    <table th:unless="${#lists.isEmpty(evaluations)}" class="data-table">
+        <caption class="visually-hidden">Evaluation outcomes</caption>
+        <thead>
+        <tr>
+            <th scope="col">Job</th>
+            <th scope="col">Outcome</th>
+            <th scope="col">Semantic</th>
+            <th scope="col">Structural</th>
+            <th scope="col">Factual</th>
+            <th scope="col">Critical facts</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="evaluation : ${evaluations}">
+
+            <td>
+                <code class="object-id"
+                      th:text="${evaluation.isAvailable()} ? ${evaluation.report.jobId} : '—'">job</code>
+            </td>
+
+            <td>
+                <span class="status-badge"
+                      th:classappend="${evaluation.isAvailable()}
+                                      ? 'status-badge--completed' : 'status-badge--warning'"
+                      th:text="${evaluation.status.label}">Outcome</span>
+            </td>
+
+            <th:block th:if="${evaluation.isAvailable()}">
+                <td th:text="${evaluation.report.percentFor(T(com.sfs.contracts.evaluation.FidelityDimension).SEMANTIC)} + '%'">0%</td>
+                <td th:text="${evaluation.report.percentFor(T(com.sfs.contracts.evaluation.FidelityDimension).STRUCTURAL)} + '%'">0%</td>
+                <td th:text="${evaluation.report.percentFor(T(com.sfs.contracts.evaluation.FidelityDimension).FACTUAL)} + '%'">0%</td>
+                <td>
+                    <span th:text="${evaluation.report.criticalFactsPreserved} + ' / ' + ${evaluation.report.criticalFactsTotal}">0/0</span>
+                    <span th:if="${evaluation.report.hasCriticalFactLoss()}"
+                          class="status-badge status-badge--violation">loss</span>
+                </td>
+                <td>
+                    <a th:href="@{'/evaluation/' + ${evaluation.report.jobId}}" class="button">View</a>
+                </td>
+            </th:block>
+
+            <th:block th:unless="${evaluation.isAvailable()}">
+                <td colspan="4" class="hint" th:text="${evaluation.reason}">Reason</td>
+                <td></td>
+            </th:block>
+
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>
