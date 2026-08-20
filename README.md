@@ -217,15 +217,16 @@ live file → register → background analysis → Semantic DNA + Rules + securi
 | | |
 |---|---|
 | **Current milestone** | M01 — User / Interface Layer |
-| **Completed task**	 |reconstruction flow|
+| **Completed task**	 |evaluation/fidelity view|
 | **Automated tests** | |
 
 **What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
 application bootstrap, explicit module boundaries enforced by an executable architecture test,
-the lightweight UI shell — base layout and primary navigation covering all seven Milestone 01
-destinations — plus five working screens: the dashboard, Files, Semantic Search, the
-Object / Semantic DNA inspector and Reconstruction. The remaining two destinations render as
-visibly disabled items rather than links, so no navigation action produces a silent 404.
+the UI shell — base layout and primary navigation covering all seven Milestone 01
+destinations — plus six working screens: the dashboard, Files, Semantic Search, the
+Object / Semantic DNA inspector, Reconstruction and Evaluation. The one remaining destination
+renders as a visibly disabled item rather than a link, so no navigation action produces a
+silent 404.
 
 The Files screen imports a UTF-8 text file, assigns an Object ID, requests analysis and
 performs semantic deletion. It is backed by **`MockFileService`, an in-memory stand-in** — not
@@ -238,7 +239,8 @@ The Search screen finds records by meaning, shows the evidence behind each match
 exact Object ID directly instead of by similarity, and keeps memorized records findable after
 their raw bytes are gone. It is backed by **`MockSearchService`** — keyword overlap against a
 fixed corpus, with **no embeddings, no vector index and no reranking**. Search deliberately
-offers no reconstruction control: search returns Object IDs, and reconstruction is a separate.
+offers no reconstruction control: search returns Object IDs, and reconstruction is a separate
+explicit action arriving in Task .
 
 The Objects screen inspects a record's Semantic DNA: summary, concepts, topics, entities,
 facts, relationships, document structure and representation quality. It shows the defining SFS
@@ -248,6 +250,7 @@ role**, never by value; the contract type has no field capable of holding a plai
 and passwords are marked non-reversible rather than offered for retrieval. Embedding
 dimensionality is reported but the vector itself is never rendered. Backed by
 **`MockSemanticRecordService`** — hand-written fixtures.
+
 Reconstruction closes the V1 loop: a single explicit click on an object regenerates a text
 artifact from its semantic memory, including for an object whose raw file has been deleted.
 Every job records the Semantic DNA, Reconstruction Rules and model versions that produced it,
@@ -257,11 +260,20 @@ declaring it a semantic reconstruction and **not** the original. Backed by
 **`MockReconstructionService`**, which formats Semantic DNA deterministically; there is **no
 reconstruction model** and nothing generates language.
 
+The Evaluation screen reports fidelity across six dimensions — semantic, structural, factual,
+entity, relationship and completeness — **separately, never as one aggregate figure**, because
+a strong semantic score would otherwise conceal a lost date or quantity. Facts marked critical
+are scored on their own, and storage cost is shown beside fidelity so knowledge preservation
+density can be judged. Crucially, where the original file has been deleted there is nothing to
+compare against, so the screen reports *Not measurable* and shows **no score at all** rather
+than estimating one. Backed by **`MockEvaluationService`**: nothing is measured, no text is
+compared, and the figures are fixed illustrative constants.
+
 **What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database,
 Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction
 Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. **No semantic
 analysis is performed and no Semantic DNA is produced** — importing a file registers a name
-and a size, nothing more. Nothing is persisted.
+and a size, nothing more. Nothing is persisted..
 
 Verification status is tracked deliberately — *implemented*, *compiled*, *unit-tested*, *integration-tested*, *experimentally evaluated*, and *accepted* are distinct states and are never conflated. No fidelity percentage is treated as a fact unless a reproducible measurement produces it.
 ---
@@ -276,8 +288,8 @@ M01 — User / Interface Layer
  ├── 01.3  Semantic Search view                                 ✅ complete
  ├── 01.4  Object / Semantic DNA view                           ✅ complete
  ├── 01.5  reconstruction flow                                  ✅ complete
- ├── 01.6  Evaluation / fidelity view                           ◀  next
- ├── 01.7  Security / policy settings
+ ├── 01.6  Evaluation / fidelity view                           ✅ complete
+ ├── 01.7  Security / policy settings                            ◀ next
  └── 01.8  Milestone integration tests + acceptance report
 ```
 Every M01 view is built against **mock services**. Real backend services arrive from M02
@@ -342,7 +354,7 @@ mvn -pl sfs-ui spring-boot:run
 
 Then open <http://localhost:8080>.
 
-> The dashboard, Files, Search, Objects and Reconstruction screens are implemented. The other two navigation destinations are
+> The dashboard, Files, Search, Objects, Reconstruction and Evaluation screens are implemented. The one remaining navigation destination is
 > deliberately not clickable until their task lands, so no link produces a 404.
 >
 > The application starts with the `mock` profile active, which supplies in-memory stand-ins
@@ -381,7 +393,8 @@ sfs/
 │       ├── file/           # FileService, FileSummary, FileStatus, requests, results
 │       ├── search/         # SearchService, SearchQuery, SearchResult, evidence
 │       ├── semantic/       # SemanticDnaView, ProtectedReferenceView, record service
-│       └── reconstruction/ # ReconstructionService, job, artifact, status
+│       ├── reconstruction/ # ReconstructionService, job, artifact, status
+│       └── evaluation/     # EvaluationService, fidelity report, dimensions
 │
 └── sfs-ui/                 # server-rendered web UI
     ├── src/main/java/com/sfs/ui/
@@ -483,10 +496,12 @@ Reconstruction quality is decomposed rather than reported as a single score, so 
 - Object detail is read-only by design. Semantic DNA is produced by the Semantic Engine and amended through the improvement loop, never edited through the interface.
 - Reconstruction formats Semantic DNA deterministically into sections. There is no reconstruction model, no language generation and no measured fidelity; the artifact is structured text, not prose.
 - Reconstruction jobs complete synchronously and are held in memory. Real reconstruction is asynchronous; the job status machinery exists so the interface is already shaped for it.
+- **No fidelity figure in this build is a measurement.** The mock evaluator compares nothing; its scores are fixed constants attached to fixture data and must never be quoted as evidence about reconstruction quality.
+- The 80% concern threshold on correctness-critical dimensions is a display cue only. It is not an acceptance criterion and implies no target.
 - `sfs-core` and `sfs-contracts` contain package documentation only.
 - Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, `aria-current`, `aria-disabled`) and has not been screen-reader audited.
 - `spring-boot-starter-web` is deprecated in Spring Boot 4 in favour of `spring-boot-starter-webmvc`; the rename is pending a dedicated task.
-- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit.
+- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit in M14.
 - Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
 ---
 
