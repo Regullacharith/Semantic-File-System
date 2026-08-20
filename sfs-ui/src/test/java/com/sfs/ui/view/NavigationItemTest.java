@@ -20,7 +20,7 @@ class NavigationItemTest {
     }
 
     @Test
-    @DisplayName("marks every screen delivered so far as implemented")
+    @DisplayName("marks every Milestone 01 destination as implemented")
     void implementedDestinationsAreAvailable() {
         assertThat(NavigationItem.all())
                 .filteredOn(NavigationItem::isAvailable)
@@ -30,14 +30,14 @@ class NavigationItemTest {
                         NavigationItem.SEARCH,
                         NavigationItem.OBJECTS,
                         NavigationItem.RECONSTRUCTION,
-                        NavigationItem.EVALUATION);
+                        NavigationItem.EVALUATION,
+                        NavigationItem.SETTINGS);
     }
 
     @Test
-    @DisplayName("leaves destinations without a route marked planned")
+    @DisplayName("leaves no destination unimplemented once the milestone is complete")
     void unimplementedDestinationsArePlanned() {
-        assertThat(NavigationItem.planned())
-                .containsExactly(NavigationItem.SETTINGS);
+        assertThat(NavigationItem.planned()).isEmpty();
     }
 
     @ParameterizedTest

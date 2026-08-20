@@ -837,3 +837,29 @@ a.app-nav__link:focus {
 .score-row .hint {
     margin-top: var(--space-xs);
 }
+
+/* -------------------------------------------------------------- settings */
+
+.guarantee-list {
+    margin: 0 0 var(--space-md);
+    padding: 0;
+    list-style: none;
+}
+
+.guarantee {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--colour-border);
+    font-size: 0.9rem;
+}
+
+.guarantee:last-child {
+    border-bottom: none;
+}
+
+.row--locked {
+    background: var(--colour-bg);
+}

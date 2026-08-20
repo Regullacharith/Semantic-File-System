@@ -17,17 +17,17 @@ public enum NavigationItem {
     /** Semantic Search view. */
     SEARCH("Search", "/search", "Find semantic records by meaning", true),
 
-    /** Object / Semantic DNA inspection view.  */
+    /** Object / Semantic DNA inspection view. */
     OBJECTS("Objects", "/objects", "Inspect Object IDs and Semantic DNA", true),
 
     /** Single-click reconstruction flow. */
     RECONSTRUCTION("Reconstruction", "/reconstruction", "Reconstruct artifacts from semantic memory", true),
 
-    /** Evaluation / fidelity view. */
+    /** Evaluation / fidelity view.*/
     EVALUATION("Evaluation", "/evaluation", "Semantic, structural and factual fidelity reports", true),
 
     /** Security and policy settings. */
-    SETTINGS("Settings", "/settings", "Security and privacy policy configuration", false);
+    SETTINGS("Settings", "/settings", "Security and privacy policy configuration", true);
 
     private final String label;
     private final String path;
