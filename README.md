@@ -1,543 +1,971 @@
 # Semantic File System (SFS)
 
-**Version:** V1 
+> **A semantic-memory and reconstruction system for files.**
 
-The core idea is to make a file more than just a collection of raw bytes. SFS creates a semantic representation of the file—what it contains, what it means, how its information is related, and how its structure can be reconstructed.
-For example, suppose you have `project.txt`:
+SFS — **Semantic File System** — is a research and engineering project that explores a different approach to file preservation.
 
-```
-"This project develops an AI-powered database..."
-```
+Traditional file systems primarily preserve the raw bytes of a file. SFS additionally preserves a structured representation of **what the file means**: its identity, concepts, topics, facts, relationships, structure, semantic representation, and information required to support later reconstruction.
 
-Instead of only storing the raw text, SFS creates something conceptually like:
-```
-Object ID
-   │
-   ├── File identity
-   ├── Type: text
-   ├── Topics
-   │     ├── AI
-   │     └── Database
-   ├── Concepts
-   ├── Entities
-   ├── Facts
-   ├── Relationships
-   ├── Document structure
-   ├── Semantic representation
-   ├── Vector embedding
-   └── Reconstruction Rules
-             │
-             ▼
-        Semantic DNA
-```
+The central idea is simple:
 
-That Semantic DNA is stored in the Memory Database.
-
-If the original raw file is later intentionally deleted, SFS is not trying to recover the original bytes from the disk. Instead:
-```
-Deleted raw file
-       ↓
-Semantic memory remains
-       ↓
-Semantic Search
-       ↓
-Find Object ID
-       ↓
-Retrieve Semantic DNA
-       ↓
-Reconstruction Rules
-       ↓
-Reconstruction Engine
-       ↓
-New reconstructed file
-```
-The reconstructed file does not have to be byte-for-byte identical to the original. Your V1 design focuses on:
-
-Semantic similarity — does it mean the same thing?
-Structural similarity — does it preserve the organization?
-Factual/content fidelity — did it preserve the important information?
-SFS is a backend-oriented system that preserves a structured semantic memory of files so that their meaning, structure, and important information can later be searched and used to reconstruct a new representation even after the original raw data has been deleted.A research and engineering project that stores what a file **means**, not just what a file **contains** — and then reconstructs a semantically faithful artifact from that meaning after the original bytes are gone.
-
----
-
-## Table of Contents
-
-- [Concept](#concept)
-- [What SFS Is Not](#what-sfs-is-not)
-- [Architecture](#architecture)
-- [Core Abstractions](#core-abstractions)
-- [Project Status](#project-status)
-- [Development Workflow](#development-workflow)
-- [Prerequisites](#prerequisites)
-- [Build and Run](#build-and-run)
-- [Repository Layout](#repository-layout)
-- [Milestone Roadmap](#milestone-roadmap)
-- [Development Protocol](#development-protocol)
-- [Research Metrics](#research-metrics)
-- [Known Limitations](#known-limitations)
-- [License](#license)  
-
----
-
-## Concept
-
-An ordinary text file is converted into a structured semantic representation called **Semantic DNA**, which is persisted independently of the raw bytes. Once that semantic memory is durably committed, the original file may be deleted — and the system can still find the record by meaning and regenerate a semantically equivalent artifact from it.
-
-```
-ordinary text file
-        │
-        ▼
-   Text Adapter
-        │
-        ▼
-  Semantic Engine
-        │
-        ▼
-   Semantic DNA ──────────────┐
-        │                     │
-        ▼                     ▼
- Memory Database        Vector Index
-        │                     │
-        └──── Semantic Search ┘
-        │
-        ▼
-Reconstruction Rules + SFS Reconstruction Model
-        │
-        ▼
- Reconstruction Engine
-        │
-        ▼
- reconstructed text file
-        │
-        ▼
-   Fidelity Report
+```text
+                    LIVE FILE
+                       │
+                       ▼
+                File-Type Adapter
+                       │
+                       ▼
+                 Semantic Engine
+                       │
+                       ▼
+                  Semantic DNA
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+      Memory Database        Vector Index
+             │                   │
+             └─────────┬─────────┘
+                       ▼
+                 Semantic Search
+                       │
+                       ▼
+                    Object ID
+                       │
+                       ▼
+              Semantic DNA + Rules
+                       │
+                       ▼
+              Reconstruction Engine
+                       │
+                       ▼
+              Reconstructed File
+                       │
+                       ▼
+             Fidelity Evaluation
 ```
 
-The objective is preservation of **semantic identity** — meaning, structure, facts, entities and relationships — measured honestly and separately, rather than byte-level recovery.
-
----
-
-## What SFS Is Not
-
-Stated explicitly, because these boundaries define the project:
-
-| Not this | Reason |
-|---|---|
-| A byte-for-byte recovery system | Exact information cannot be recovered from a hash, embedding or semantic representation once discarded. SFS is a *semantic* reconstruction system. |
-| A physical filesystem or kernel module | Semantic File is a logical object/API abstraction, not a new on-disk format. |
-| A compression tool | Storage is evaluated as **Knowledge Preservation Density** against measured fidelity, not as byte-ratio compression. |
-| An LLM wrapper | A deterministic baseline is implemented first. The reconstruction model is replaceable behind an interface and must not fabricate unsupported critical facts. |
-| A guaranteed-accuracy system | The 87–92% fidelity figure is an **experimental target to be measured**, never a pre-declared specification. |
-
----
-
-## Architecture
-
-Fourteen subsystems, each owning a milestone. Dependency direction is strictly enforced by the build.
-
-```
-User / Lightweight UI                       [M01]
-        │
-Application / API Layer                     [M02]
-        │
-File Lifecycle Manager                      [M03]
-        │
-Semantic Engine                             [M04]
-        │
-Adapter Resolver ──── Text Adapter          [M05]
-        │
-Semantic DNA                                [M06]
-        │
-        ├── Reconstruction Rules            [M07]
-        ├── Memory DB + Vector Index        [M08]
-        └── Security & Privacy              [M13]
-        │
-Semantic Search                             [M09]
-        │
-Reconstruction Engine                       [M11]
-        │  ▲
-        │  └── SFS Reconstruction Model      [M10]
-        ▼
-Evaluation & Fidelity                       [M12]
-        │
-        └──► improvement loop → DNA / Rules / Model
-
-Infrastructure / Observability / Testing    [M14]  (spans all milestones)
-```
-
-### Enforced boundaries
-
-Architectural rules are executable, not merely documented:
-
-- `sfs-core` has **zero production dependencies** — no Spring, no Jackson, no logger. The domain model is depended upon by every subsystem, so a framework here would leak everywhere.
-- `sfs-ui` may depend only on `sfs-contracts`. An `ArchitectureBoundaryTest` fails the build if the UI imports any backend subsystem package or `java.sql`.
-- Raw data, semantic representation, memory/index information and security-protected information are kept distinctly separate.
-
----
-
-## Core Abstractions
-
-**Semantic File** — logical object carrying identity, metadata, raw data (while live) and Semantic DNA.
-
-**Object ID** — stable logical identity that survives rename, move and raw-file deletion. Storage addresses are supporting metadata only.
-
-**Semantic DNA** — the structured persistent representation. Not a text summary.
-
-```
-SemanticDNA
-  schemaVersion · identityRef · summary
-  concepts[] · topics[] · entities[] · facts[] · relationships[]
-  structure · embeddings[] · behaviour
-  reconstructionRules[] · fidelityProfile · securityProfile · version
-```
-
-**Semantic Record** — the database record that survives raw-file deletion.
-
-**Reconstruction Rules** — versioned declarative constraints persisted *with* Semantic DNA but executed *by* the reconstruction subsystem. They may mark facts and entities as required, constrain structure and ordering, and forbid deviation.
-
-**Protected Reference** — pointer to a sensitive exact value held outside ordinary Semantic DNA, in an encrypted store, resolvable only under authorization. Passwords use a separate non-reversible policy.
-
-### Semantic deletion workflow
-
-Raw bytes are removed **only** after semantic memory is validated and durably committed:
-
-```
-live file → register → background analysis → Semantic DNA + Rules + security refs
-   → validate completeness/fidelity/security → commit Semantic Record
-   → confirm durable memory → user-authorized deletion → remove raw bytes
-   → Semantic Record remains → searchable → reconstructable
-```
+SFS is **not** intended to be a conventional backup system or a byte-for-byte forensic recovery mechanism. The objective is to preserve semantic information intentionally so that, after authorized deletion of raw data, the surviving semantic record can be searched and used to produce a new, semantically faithful representation.
 
 ---
 
 ## Project Status
 
-> **Early development.** SFS V1 is being built incrementally. The current work is still inside **Milestone 01 — User / Interface Layer**.
+**Version:** V1  
+**Status: Complete:** User / Interface Layer  
+**Implementation language:** Java 21  
+**Current file scope:** Text files   
 
-| | |
-|---|---|
-| **Current milestone** | M01 — User / Interface Layer |
-| **Completed task**	 |Security / policy settings|
-| **Automated tests** | |
+ui layer has been completed and integrated into the `main` branch.
+SFS V1 is being developed incrementally.
 
-**What exists today:** a three-module Maven reactor, Java 21 configuration, Spring Boot 4.1.0
-application bootstrap, explicit module boundaries enforced by an executable architecture test,
-the lightweight UI shell — base layout and primary navigation covering all seven Milestone 01
-destinations — and **all seven are now implemented**: the dashboard, Files, Semantic Search,
-the Object / Semantic DNA inspector, Reconstruction, Evaluation and Security settings. No
-navigation item renders as "planned" any more.
+The project is **not yet V1-complete**.
 
-The Files screen imports a UTF-8 text file, assigns an Object ID, requests analysis and
-performs semantic deletion. It is backed by **`MockFileService`, an in-memory stand-in** — not
-the real File Lifecycle Manager. The mock deliberately enforces the lifecycle *rules* rather
-than merely storing data: semantic deletion is refused unless a file has been analyzed,
-mirroring the constraint that raw bytes may never be removed before a validated Semantic
-Record is durably committed. Its state resets when the application restarts.
+Release tag:
+`v1-m01`
 
-The Search screen finds records by meaning, shows the evidence behind each match, resolves an
-exact Object ID directly instead of by similarity, and keeps memorized records findable after
-their raw bytes are gone. It is backed by **`MockSearchService`** — keyword overlap against a
-fixed corpus, with **no embeddings, no vector index and no reranking**. Search deliberately
-offers no reconstruction control: search returns Object IDs, and reconstruction is a separate
-explicit action.
+completed work establishes the user-facing and application-facing foundation. Later will implement the actual semantic, memory, search, reconstruction, evaluation, and security subsystems.
 
-The Objects screen inspects a record's Semantic DNA: summary, concepts, topics, entities,
-facts, relationships, document structure and representation quality. It shows the defining SFS
-behaviour directly — a memorized object whose raw file is gone still displays its complete
-semantic memory. Sensitive values are rendered as **protected references described by semantic
-role**, never by value; the contract type has no field capable of holding a plaintext secret,
-and passwords are marked non-reversible rather than offered for retrieval. Embedding
-dimensionality is reported but the vector itself is never rendered. Backed by
-**`MockSemanticRecordService`** — hand-written fixtures.
-
-Reconstruction closes the V1 loop: a single explicit click on an object regenerates a text
-artifact from its semantic memory, including for an object whose raw file has been deleted.
-Every job records the Semantic DNA, Reconstruction Rules and model versions that produced it,
-and runs verification that can **reject** the output — a document holding protected values is
-refused rather than having its withheld secrets invented. The downloaded file carries a header
-declaring it a semantic reconstruction and **not** the original. Backed by
-**`MockReconstructionService`**, which formats Semantic DNA deterministically; there is **no
-reconstruction model** and nothing generates language.
-
-The Evaluation screen reports fidelity across six dimensions — semantic, structural, factual,
-entity, relationship and completeness — **separately, never as one aggregate figure**, because
-a strong semantic score would otherwise conceal a lost date or quantity. Facts marked critical
-are scored on their own, and storage cost is shown beside fidelity so knowledge preservation
-density can be judged. Crucially, where the original file has been deleted there is nothing to
-compare against, so the screen reports *Not measurable* and shows **no score at all** rather
-than estimating one. Backed by **`MockEvaluationService`**: nothing is measured, no text is
-compared, and the figures are fixed illustrative constants.
-
-The Settings screen reports the security and privacy configuration: the handling policy for
-each sensitive category, where encryption keys live, and an audit trail of security events.
-Four protections are reported as **enforced invariants rather than options** — secrets never
-reach embeddings, logs or unrestricted Semantic DNA, and resolving a protected reference
-always requires authorization; `SecuritySettingsView` refuses to be constructed with any of
-them disabled. Passwords are fixed to a non-reversible policy by the type system:
-`SensitiveTypePolicy` throws if a password is paired with reversible handling, so the rule
-cannot be relaxed through a template, a form or a crafted request. The screen is read-only .
-
-**What does not exist yet:** Text Adapter, Semantic Engine, Semantic DNA, Memory Database,
-Vector Index, Semantic Search, Reconstruction Rules, SFS Reconstruction Model, Reconstruction
-Engine, Evaluation/Fidelity pipeline, and the V1 security/privacy subsystem. **No semantic
-analysis is performed and no Semantic DNA is produced** — importing a file registers a name
-and a size, nothing more. Nothing is persisted..
-
-Verification status is tracked deliberately — *implemented*, *compiled*, *unit-tested*, *integration-tested*, *experimentally evaluated*, and *accepted* are distinct states and are never conflated. No fidelity percentage is treated as a fact unless a reproducible measurement produces it.
 ---
-### M01 sequence
 
+# What Is SFS?
+
+A normal file can be viewed primarily as:
+
+```text
+File
+├── Identity
+├── Raw Bytes
+└── Metadata
 ```
-M01 — User / Interface Layer
- │
- ├── 01.0  Project skeleton, Maven reactor, module boundaries   ✅ complete
- ├── 01.1  UI shell and navigation                              ✅ complete
- ├── 01.2  File import / analyze / delete controls              ✅ complete
- ├── 01.3  Semantic Search view                                 ✅ complete
- ├── 01.4  Object / Semantic DNA view                           ✅ complete
- ├── 01.5  reconstruction flow                                  ✅ complete
- ├── 01.6  Evaluation / fidelity view                           ✅ complete
- ├── 01.7  Security / policy settings                           ✅ complete
- └── 01.8  Milestone integration tests + acceptance report      ◀ next
+
+SFS introduces a richer logical representation:
+
+```text
+Semantic File
+├── Identity
+│   ├── Object ID
+│   ├── Name
+│   ├── Type
+│   └── Version
+│
+├── Raw Data
+│
+├── Semantic DNA
+│   ├── Topics
+│   ├── Concepts
+│   ├── Entities
+│   ├── Facts
+│   ├── Relationships
+│   ├── Structure
+│   ├── Semantic Representation
+│   ├── Embeddings
+│   └── Behaviour / Context
+│
+└── Reconstruction Rules
 ```
-Every M01 view is built against **mock services**. Real backend services arrive from M02
-onward, exactly as the milestone specification permits: *"API contracts; can begin with mocks."*
 
-The important distinction is that M01 is the milestone currently being implemented. The
-remaining SFS architecture is planned and documented, but intentionally not implemented yet.
+The **Semantic File** is a logical abstraction. It does not mean that SFS V1 replaces the operating system's physical filesystem.
 
-### Development workflow
+---
 
-SFS follows this controlled loop:
+# Semantic DNA
 
+**Semantic DNA** is the persistent semantic representation of a file.
+
+It is designed to capture the characteristics needed to understand and later reconstruct the file without requiring the original raw bytes to remain available.
+
+Depending on the supported file type, Semantic DNA can represent:
+
+- identity
+- topics
+- concepts
+- entities
+- facts
+- relationships
+- document structure
+- semantic representation
+- vector embeddings
+- behavioural/contextual information
+- reconstruction constraints
+- fidelity information
+- security references
+
+Semantic DNA is therefore more than a conventional file summary.
+
+It is a structured representation intended to act as the semantic memory of the object.
+
+---
+
+# Object ID
+
+Each Semantic File has a persistent **Object ID**.
+
+The Object ID provides the logical identity of the semantic object independently of:
+
+- filename
+- filesystem path
+- physical storage location
+- current file extension
+
+This becomes important when the original raw file is no longer present.
+
+Conceptually:
+
+```text
+Original File
+     │
+     └── Object ID: SFS-OBJECT-...
+                    │
+                    ▼
+             Semantic Memory
+                    │
+                    ▼
+             Search / Inspect
+                    │
+                    ▼
+               Reconstruct
 ```
-Milestone
-   ↓
-Phase
-|  ↓
-Compile
-   ↓
-Run tests
-   ↓
-Run application / verification scenario
-   ↓
-Inspect code and Git diff
-   ↓
-commits
-   ↓
-Next phase
 
+The Object ID is therefore a core connection between the original file and its persistent semantic record.
+
+---
+
+# Memory Database
+
+The **Memory Database** stores the persistent semantic information associated with Semantic Files.
+
+A conceptual record may contain:
+
+```text
+Object ID
+Metadata
+Semantic DNA
+Topics
+Concepts
+Entities
+Facts
+Relationships
+Structure
+Embedding references
+Reconstruction Rules
+Versions
+Fidelity information
+Security references
+Lifecycle information
 ```
-## Prerequisites
 
-| Tool | Version | Notes |
+The Memory Database is intended to be the canonical structured memory.
+
+The Vector Index is a retrieval mechanism and should not become the sole source of truth.
+
+---
+
+# Semantic Search
+
+SFS is designed to allow files to be searched according to **meaning**, not only filename or path.
+
+For example, a user may search:
+
+```text
+"the document describing how SFS reconstructs deleted text files"
+```
+
+The system can use semantic retrieval to identify relevant Object IDs and their corresponding Semantic DNA.
+
+Conceptually:
+
+```text
+User Query
+    │
+    ▼
+Query Representation
+    │
+    ▼
+Vector / Semantic Retrieval
+    │
+    ▼
+Structured Filtering / Ranking
+    │
+    ▼
+Matching Object IDs
+    │
+    ▼
+Semantic Records
+```
+
+Search and reconstruction are separate operations.
+
+A search result does not automatically reconstruct a file.
+
+The user explicitly chooses when reconstruction should occur.
+
+---
+
+# Semantic Reconstruction
+
+SFS does not define reconstruction as forensic recovery of the original bytes.
+
+Instead, reconstruction means:
+
+> **Creating a new artifact from the surviving semantic representation of an object.**
+
+The reconstruction pipeline is:
+
+```text
+Object ID
+    │
+    ▼
+Semantic DNA
+    │
+    ▼
+Reconstruction Rules
+    │
+    ▼
+Reconstruction Plan
+    │
+    ▼
+SFS Reconstruction Model
+    │
+    ▼
+Reconstruction Engine
+    │
+    ▼
+New Artifact
+    │
+    ▼
+Evaluation
+```
+
+The reconstructed result may differ from the original wording or byte sequence while still preserving its intended meaning and structure.
+
+---
+
+# Reconstruction Rules
+
+The project previously referred to this concept as **Reconstruction Grammar**.
+
+The project terminology is now:
+
+**Reconstruction Rules**
+
+Reconstruction Rules define constraints and information that should guide reconstruction.
+
+They can describe:
+
+- required concepts
+- important facts
+- entities
+- relationships
+- document structure
+- ordering
+- consistency requirements
+- reconstruction priorities
+- confidence requirements
+- restrictions against unsupported additions
+
+The rules belong to the semantic representation, while their execution belongs to the reconstruction subsystem.
+
+---
+
+# Reconstruction Model
+
+SFS V1 is intentionally designed so that reconstruction does not depend permanently on a large general-purpose LLM.
+
+The architecture allows a future reconstruction model to be:
+
+- deterministic where possible
+- lightweight
+- specialized
+- replaceable
+- optimized specifically for semantic reconstruction
+
+The project will investigate whether a small/custom reconstruction model can provide sufficient fidelity for the target workload.
+
+A model is not considered successful merely because it produces fluent text.
+
+It must preserve the information represented by Semantic DNA and Reconstruction Rules.
+
+---
+
+# Fidelity and Evaluation
+
+SFS reconstruction is evaluated using multiple dimensions.
+
+### Semantic Similarity
+
+Does the reconstructed artifact preserve the meaning of the original?
+
+### Structural Similarity
+
+Does it preserve important organizational characteristics such as:
+
+- sections
+- ordering
+- relationships
+- hierarchy
+- document structure
+
+### Factual / Content Fidelity
+
+Does it preserve important facts and content without introducing unsupported information?
+
+Additional measurements can include:
+
+- entity fidelity
+- relationship fidelity
+- information completeness
+- reconstruction confidence
+- storage cost
+- reconstruction latency
+
+The previously discussed target of approximately **87–92% or higher** is an experimental target, not a guaranteed result. It should only be reported as achieved after reproducible evaluation.
+
+---
+
+# File Lifecycle
+
+The intended lifecycle is:
+
+```text
+                 ┌──────────────┐
+                 │   Live File  │
+                 └──────┬───────┘
+                        │
+                        ▼
+                    Register
+                        │
+                        ▼
+                Semantic Analysis
+                        │
+                        ▼
+                  Semantic DNA
+                        │
+                        ▼
+                   Validation
+                        │
+                        ▼
+              Durable Memory Commit
+                        │
+                        ▼
+              Authorized Deletion
+                        │
+                        ▼
+              Raw Data Removed
+                        │
+                        ▼
+              Semantic Memory Remains
+                        │
+              ┌─────────┼─────────┐
+              ▼         ▼         ▼
+            Search   Inspect   Reconstruct
+                                  │
+                                  ▼
+                              Evaluate
+```
+
+The semantic memory must be successfully persisted and validated before the raw-data deletion stage is allowed by the configured lifecycle policy.
+
+SFS therefore does not depend on attempting to recover overwritten physical storage.
+
+---
+
+# Security and Sensitive Data
+
+Semantic representations can contain sensitive information.
+
+Examples include:
+
+- passwords
+- API keys
+- authentication tokens
+- phone numbers
+- email addresses
+- physical addresses
+- account identifiers
+- private credentials
+- other confidential values
+
+SFS should not blindly place such values into:
+
+- ordinary Semantic DNA
+- vector embeddings
+- application logs
+- debugging output
+- unrestricted search results
+
+The security architecture therefore uses policies for sensitive information and protected storage/encryption where authorized retention is required.
+
+Passwords are not treated as ordinary reconstructable content.
+
+Security implementation is part of  future  and should not be confused with current state.
+
+---
+
+# V1 Scope
+
+SFS V1 is deliberately restricted to a manageable initial scope.
+
+## Included
+
+- Java 21
+- Text files
+- Semantic File abstraction
+- Object ID
+- Semantic DNA
+- Text Adapter
+- Semantic Engine
+- Automatic adapter selection
+- Memory Database
+- Vector Index
+- Semantic Search
+- Vector embeddings
+- Reconstruction Rules
+- SFS Reconstruction Model
+- Reconstruction Engine
+- Semantic Reconstruction
+- Single-click reconstruction
+- Semantic similarity
+- Structural similarity
+- Factual/content fidelity
+- Reconstruction evaluation
+- Iterative Semantic DNA improvement
+- Encryption
+- Sensitive-data policies
+- Storage/fidelity measurements
+- UI
+
+## Current V1 file support
+
+```text
+Text
+└── Text Adapter
+```
+
+The current implementation does **not** attempt to support every file format.
+
+---
+
+# Future File-Type Adapters
+
+The adapter architecture is designed for extension.
+
+Potential future adapters include:
+
+```text
+Text
+Source Code
+Images
+Audio
+Video
+PDF
+Spreadsheets
+Database Records
+Other Structured / Unstructured Formats
+```
+
+These are future extensions, not current V1 text implementation.
+
+The intended design is that the **Semantic Engine automatically selects the appropriate adapter** according to the input type.
+
+Conceptually:
+
+```text
+Input File
+    │
+    ▼
+File-Type Detection
+    │
+    ▼
+Semantic Engine
+    │
+    ├── Text Adapter
+    ├── Image Adapter       [Future]
+    ├── Audio Adapter       [Future]
+    ├── Video Adapter       [Future]
+    ├── Code Adapter        [Future]
+    └── Other Adapters      [Future]
+```
+
+This adapter architecture allows SFS to evolve without changing the entire system for every new file type.
+
+---
+
+# V1 Architecture
+
+```text
+SFS V1
+│
+├── 01. User / Interface Layer
+│
+├── 02. Application & API Layer
+│
+├── 03. File Lifecycle Manager
+│
+├── 04. Semantic Engine
+│
+├── 05. File-Type Adapter Framework
+│       └── Text Adapter [V1]
+│
+├── 06. Semantic Representation System
+│       └── Semantic DNA
+│
+├── 07. Reconstruction Rules System
+│
+├── 08. Memory System
+│       ├── Memory Database
+│       └── Vector Index
+│
+├── 09. Semantic Search Engine
+│
+├── 10. SFS Reconstruction Model
+│
+├── 11. Reconstruction Engine
+│
+├── 12. Evaluation & Fidelity System
+│
+├── 13. Security & Privacy System
+│
+└── 14. Infrastructure / Observability / Testing
+```
+
+The architecture is developed incrementally.
+
+A component appearing in the architecture does not necessarily mean that its production implementation is already complete.
+
+---
+
+# completed  Implementation — User/Interface Layer
+
+The current repository  focuses on:
+
+## M01 — User / Interface Layer
+
+M01 establishes the  UI and application-facing boundaries required for subsequent .
+
+ includes:
+
+- UI shell
+- navigation
+- file import interaction
+- object inspection views
+- Semantic DNA inspection UI
+- semantic search UI
+- reconstruction UI
+- evaluation UI
+- security settings UI
+- application-facing contracts
+- deterministic mock services
+- UI/controller tests
+- view-model tests
+- integration tests
+- architecture-boundary tests
+
+The mock services exist to allow the interface to be developed before the real backend components are implemented.
+
+### Important
+
+The following should **not** be interpreted as completed merely because corresponding UI screens or contracts exist:
+
+- real Semantic Engine
+- real Semantic DNA generation
+- Memory Database
+- real Vector Index
+- real Semantic Search Engine
+- SFS Reconstruction Model
+- Reconstruction Engine
+- real Evaluation Engine
+- production Security/Privacy System
+
+Those belong to later implementation.
+
+---
+
+# Milestone Roadmap
+
+SFS V1 is being developed through the following milestones:
+
+| Milestone | Component | Purpose |
 |---|---|---|
-| JDK | **21 LTS** | Eclipse Temurin recommended. |
-| Apache Maven | **3.9.16** | |
-| Git | 2.4x | |
-| Browser | any modern | UI is server-rendered HTML |
+| M01 | User / Interface Layer | user-facing foundation |
+| M02 | Application & API Layer | Application orchestration and APIs |
+| M03 | File Lifecycle Manager | File registration, deletion and lifecycle |
+| M04 | Semantic Engine | Semantic processing and adapter routing |
+| M05 | File-Type Adapter Framework | Text adapter and future adapter architecture |
+| M06 | Semantic Representation System | Semantic DNA |
+| M07 | Reconstruction Rules System | Reconstruction constraints and rules |
+| M08 | Memory System | Memory Database and Vector Index |
+| M09 | Semantic Search Engine | Semantic retrieval and ranking |
+| M10 | SFS Reconstruction Model | Specialized reconstruction model |
+| M11 | Reconstruction Engine | Reconstruction pipeline |
+| M12 | Evaluation & Fidelity System | Fidelity measurement and improvement |
+| M13 | Security & Privacy System | Encryption and sensitive-data policies |
+| M14 | Infrastructure / Observability / Testing | Reliability, monitoring and final integration |
 
-Verify your toolchain:
+**V1 is complete only after sfs been implemented and verified.**
 
-```bash
-java -version     # 21.x
-mvn -version      # Apache Maven 3.9.16, Java version 21
-```
 ---
 
-## Build and Run
+# Technology
 
-```bash
-git clone <repository-url>
-cd sfs
+## Primary Language
 
-mvn clean install
-```
+**Java 21**
 
-Run the UI:
+## Current Application Stack
 
-```bash
-mvn -pl sfs-ui spring-boot:run
-```
+- Java 21
+- Maven
+- Spring Boot
+- Thymeleaf
+- HTML
+- CSS
+- JUnit / Spring testing infrastructure
 
-Then open <http://localhost:8080>.
-
-> All screens are implemented and reachable.
->
-> The application starts with the `mock` profile active, which supplies in-memory stand-ins
-> for backend services that do not exist yet. Override with `SFS_PROFILE` when real services
-> arrive.
-
-Run on a different port :
-
-```bash
-mvn -pl sfs-ui spring-boot:run -Dspring-boot.run.arguments=--server.port=9090
-# or
-java -jar sfs-ui/target/sfs-ui-0.1.0-SNAPSHOT.jar --server.port=9090
-```
-
-Run the test suite:
-
-```bash
-mvn test                      # all modules
-mvn -pl sfs-ui test           # UI module only
-```
 ---
 
-## Repository Layout
+# Repository Structure
 
-```
-sfs/
-├── pom.xml                 # reactor: Java 21, Spring Boot BOM, dependency management
-├── .gitignore
+```text
+Semantic-File-System/
+│
+├── sfs-core/
+│   └── Core/domain implementation
+│
+├── sfs-contracts/
+│   └── Shared application contracts
+│
+├── sfs-ui/
+│   ├── Controllers
+│   ├── View Models
+│   ├── Templates
+│   ├── Static CSS
+│   └── UI tests
+│
+├── pom.xml
 ├── README.md
+├── LICENSE
+└── .gitignore
+```
+
+---
+
+# Build
+
+The project requires **Java 21**.
+
+Verify:
+
+```bash
+java --version
+```
+
+Then build and test:
+
+```bash
+mvn clean test
+```
+
+For a complete build:
+
+```bash
+mvn clean package
+```
+---
+
+# Running the Application
+
+From the project root:
+
+```bash
+mvn spring-boot:run -pl sfs-ui
+```
+---
+
+# Testing
+
+SFS uses multiple levels of verification:
+
+```text
+Unit Tests
+    │
+    ▼
+Controller Tests
+    │
+    ▼
+Contract Tests
+    │
+    ▼
+Integration Tests
+    │
+    ▼
+Architecture Tests
+    │
+    ▼
+End-to-End Verification
+```
+
+Tests validates both:
+
+1. whether functionality works; and
+2. whether components remain within their intended architectural boundaries.
+
+---
+# Design Principles
+
+SFS follows several core principles.
+
+### 1. Semantic information is first-class
+
+The system should preserve what information means, not merely where bytes are located.
+
+### 2. Raw data and semantic memory are separate
+
+Semantic memory can survive the authorized deletion of raw data.
+
+### 3. Object identity persists independently of physical location
+
+The Object ID represents the logical object.
+
+### 4. Search and reconstruction are separate operations
+
+Finding an object does not automatically reconstruct it.
+
+### 5. Reconstruction is constrained
+
+Semantic DNA and Reconstruction Rules should constrain generated results.
+
+### 6. Fidelity is measurable
+
+Reconstruction quality must be evaluated rather than assumed.
+
+### 7. Sensitive information requires explicit policy
+
+Secrets should not casually enter semantic memory or embeddings.
+
+### 8. Adapters isolate file-type complexity
+
+Each file type can have a specialized adapter.
+
+### 9. Components are replaceable
+
+The architecture  allows implementations such as models, vector stores, and persistence technologies to evolve .
+
+---
+
+# What SFS Is Not
+
+SFS should not be confused with:
+
+- conventional file backup
+- disk undelete software
+- forensic recovery
+- ordinary compression
+- a physical replacement for NTFS/ext4/APFS/etc.
+- a guaranteed byte-level recovery mechanism
+- an LLM-only application
+
+If the original raw bytes have been destroyed, SFS does not claim that those exact bytes can magically be recovered.
+
+Instead, SFS intentionally preserves semantic memory before deletion and uses that memory for later reconstruction.
+
+---
+
+# Research Questions
+
+The project explores questions such as:
+
+### How much information is necessary?
+
+How small can a semantic representation become while still preserving enough information for useful reconstruction?
+
+### How faithful can reconstruction become?
+
+Can a compact semantic representation preserve:
+
+- meaning
+- structure
+- facts
+- relationships
+- important entities
+
+with high fidelity?
+
+### Can a specialized small model replace a general LLM?
+
+Can a tiny or custom reconstruction model perform sufficiently well when Semantic DNA and Reconstruction Rules provide strong constraints?
+
+### How should sensitive information be represented?
+
+How can names, addresses, phone numbers, credentials, API keys, and similar values be handled without storing unnecessary collections of sensitive values inside semantic memory or embeddings?
+
+### Can semantic memory scale?
+
+What are the storage and performance characteristics when millions of semantic objects exist?
+
+---
+
+# Limitations
+
+The current project has important limitations.
+
+- V1 initially supports text files only.
+- Semantic reconstruction is not guaranteed to be exact.
+- Information that was never captured cannot be reconstructed reliably.
+- Arbitrary high-entropy values cannot generally be inferred from semantic meaning.
+- Exact sensitive values require appropriate protected storage when retention is authorized.
+- Passwords are not ordinary reconstructable information.
+- Reconstruction quality must be experimentally measured.
+- Storage reduction depends strongly on the source data.
+- The current UI contains mocks where backend implementations do not yet exist.
+- The physical filesystem itself is not being replaced by SFS in V1.
+
+---
+
+# Future Direction
+
+After the text pipeline becomes stable, the adapter framework can expand:
+
+```text
+V1
+ │
+ └── Text
+       │
+       ▼
+Future
+ ├── Source Code
+ ├── Images
+ ├── Audio
+ ├── Video
+ ├── PDF
+ ├── Spreadsheets
+ └── Other Data Types
+```
+
+For visual and multimedia data, future adapters may use specialized recognition, representation, and reconstruction techniques rather than treating every file as text.
+
+---
+
+# Project Goal
+
+The long-term goal is to explore whether a file system can preserve **semantic identity and memory** independently from the original raw representation.
+
+The intended model is:
+
+```text
+Traditional File System
+
+File → Bytes → Storage
+```
+
+versus:
+
+```text
+SFS
+
+File
+ │
+ ├── Raw Representation
+ │
+ └── Semantic Representation
+          │
+          ▼
+      Semantic Memory
+          │
+          ▼
+    Search / Understand
+          │
+          ▼
+      Reconstruct
+```
+
+This is the core research direction behind the Semantic File System.
+
+---
+
+# License
+
+Copyright © 2026 Regullacharith
+
+All rights reserved.
+
+The SFS source code, documentation, architecture, original research
+materials, and other original project materials are protected by
+copyright and are not granted for reproduction, modification,
+distribution, sublicensing, or commercial exploitation without
+permission from the copyright holder.
+
+Third-party libraries, frameworks, models, datasets, and other external
+components remain subject to their respective licenses.
+
+See (LICENSE) for the complete notice.
+
+---
+
+# Project Status
+
+```text
+SFS V1
 │
-├── sfs-core/               # domain model — ZERO production dependencies
-│   └── src/main/java/com/sfs/core/
-│
-├── sfs-contracts/          # service interfaces + request/response models
-│   └── src/main/java/com/sfs/contracts/
-│       ├── file/           # FileService, FileSummary, FileStatus, requests, results
-│       ├── search/         # SearchService, SearchQuery, SearchResult, evidence
-│       ├── semantic/       # SemanticDnaView, ProtectedReferenceView, record service
-│       ├── reconstruction/ # ReconstructionService, job, artifact, status
-│       ├── evaluation/     # EvaluationService, fidelity report, dimensions
-│       └── security/       # SecuritySettingsService, policies, audit events
-│
-└── sfs-ui/                 # server-rendered web UI
-    ├── src/main/java/com/sfs/ui/
-    │   ├── controller/     # request handling only, no domain logic
-    │   ├── mock/           # in-memory stand-ins, active under the "mock" profile
-    │   └── view/           # immutable presentation view models
-    ├── src/main/resources/
-    │   ├── application.properties
-    │   ├── templates/      # Thymeleaf views (layout.html + one per screen)
-    │   └── static/css/     # local stylesheet, no CDN
-    └── src/test/java/com/sfs/ui/
+├── M01  User / Interface Layer          DEVELOPED
+├── M02  Application / API Layer         PLANNED
+├── M03  File Lifecycle Manager          PLANNED
+├── M04  Semantic Engine                 PLANNED
+├── M05  Adapter Framework / Text        PLANNED
+├── M06  Semantic DNA                    PLANNED
+├── M07  Reconstruction Rules            PLANNED
+├── M08  Memory Database / Vector Index  PLANNED
+├── M09  Semantic Search                 PLANNED
+├── M10  Reconstruction Model            PLANNED
+├── M11  Reconstruction Engine           PLANNED
+├── M12  Evaluation & Fidelity           PLANNED
+├── M13  Security & Privacy              PLANNED
+└── M14  Infrastructure / Testing        PLANNED
 ```
 
-Dependency direction is one-way and non-negotiable:
-
-```
-sfs-ui  ──►  sfs-contracts  ──►  sfs-core
-```
-### Technology choices
-
-| Decision | Choice | Rationale |
-|---|---|---|
-| Language | Java 21 LTS | Records for immutable value objects, sealed types for state machines, virtual threads for background analysis |
-| Build | Maven 3.9.16 multi-module | Build-enforced architectural boundaries |
-| Web | Spring Boot 4.1.0 + Thymeleaf | Server-rendered; |
-| Frontend | Vanilla JS only | lightweight UI framework |
-| Testing | JUnit 5 + AssertJ | 
----
-
-## Milestone Roadmap
-
-| # | Milestone | Status |
-|---|-----------|--------|
-| 01 | User / Interface Layer | 🔨 In progress |
-| 02 | Application & API Layer | ⬜ Planned |
-| 03 | File Lifecycle Manager | ⬜ Planned |
-| 04 | Semantic Engine | ⬜ Planned |
-| 05 | File-Type Adapter Framework — Text Adapter | ⬜ Planned |
-| 06 | Semantic Representation — Semantic DNA  | ⬜ Planned |
-| 07 | Reconstruction Rules System | ⬜ Planned |
-| 08 | Memory System — Database + Vector Index | ⬜ Planned |
-| 09 | Semantic Search Engine | ⬜ Planned |
-| 10 | SFS Reconstruction Model  | ⬜ Planned |
-| 11 | Reconstruction Engine  | ⬜ Planned |
-| 12 | Evaluation & Fidelity System  | ⬜ Planned |
-| 13 | Security & Privacy System  | ⬜ Planned |
-| 14 | Infrastructure / Observability / Testing  | ⬜ Planned |
+**SFS V1 is incomplete until the planned stages have been completed and verified.**
 
 ---
 
-## Development Protocol
+## Semantic File System
 
-Development follows a strict, granular loop:
-
-```
-Milestone → Phase → implementation + tests → integration
-   → compile → test → run → review → commit → next task
-```
----
-
-## Research Metrics
-
-Reconstruction quality is decomposed rather than reported as a single score, so a strong semantic score cannot conceal factual loss.
-
-| Metric | Measures |
-|---|---|
-| Semantic Similarity | How closely reconstructed meaning matches the source |
-| Structural Similarity | Hierarchy, section order, paragraph and list organization |
-| Factual / Content Fidelity | Preservation of claims, entities, numbers, dates, relationships |
-| Critical Fact Score | Explicit survival of facts marked critical in Semantic DNA |
-| Completeness | Proportion of required semantic information that survived |
-| Confidence Calibration | Whether stated confidence matches observed correctness |
-| Semantic Memory Size | Persistent bytes required for the Semantic Record |
-| Knowledge Preservation Density | Fidelity retained per unit of persistent semantic storage |
-| Search / Reconstruction Latency | Query-to-results and request-to-artifact timing |
-| Analysis Cost | CPU / RAM / time to build Semantic DNA |
-
----
-
-## Known Limitations
-
-**By design, in V1:**
-
-- Text files only. Image, audio, video, code, PDF, spreadsheet and database adapters are deferred — the adapter framework accommodates them without redesign.
-- Reconstruction is semantic and approximate. Byte-for-byte recovery is out of scope and impossible by construction.
-- Random or high-entropy exact values (API keys, account numbers) cannot be semantically inferred; exact recovery requires the encrypted secure store, under policy.
-- Passwords are non-reversible by default and are not treated as reconstructable secrets.
-- Single-machine deployment. Distributed operation is not addressed.
-
-**Current:**
-
-- Only the dashboard route exists. Six of the seven navigation destinations are inert.
-- The Files screen is backed by an in-memory mock, not the File Lifecycle Manager. Imported files are not persisted, are not analyzed, and are lost on restart.
-- Deleting raw data is a single click with no confirmation step. Acceptable while the data is mock; it needs an interstitial before any real implementation.
-- The file list is not paginated.
-- Search is keyword overlap against a fixed four-document corpus, not semantic retrieval. Relevance scores are illustrative and carry no measured meaning.
-- Search results are not paginated and cannot be filtered by status or date.
-- Semantic DNA shown on the Objects screen is hand-written fixture data. No document is analysed, and confidence figures are illustrative rather than measured.
-- Object detail is read-only by design. Semantic DNA is produced by the Semantic Engine and amended through the improvement loop, never edited through the interface.
-- Reconstruction formats Semantic DNA deterministically into sections. There is no reconstruction model, no language generation and no measured fidelity; the artifact is structured text, not prose.
-- Reconstruction jobs complete synchronously and are held in memory. Real reconstruction is asynchronous; the job status machinery exists so the interface is already shaped for it.
-- **No fidelity figure in this build is a measurement.** The mock evaluator compares nothing; its scores are fixed constants attached to fixture data and must never be quoted as evidence about reconstruction quality.
-- The 80% concern threshold on correctness-critical dimensions is a display cue only. It is not an acceptance criterion and implies no target.
-- **No security control is enforced yet.** The Settings screen reports intended configuration; there is no detector, policy engine, encrypted store, key management or audit trail behind it..
-- Security settings are read-only. Editing a policy requires authorization and auditing that do not exist yet, and a control implying otherwise would be misleading.
-- `sfs-core` and `sfs-contracts` contain package documentation only.
-- Responsive behaviour is minimal — navigation wraps, but there is no mobile-specific layout. Accessibility support is basic (skip link, `aria-current`, `aria-disabled`) and has not been screen-reader audited.
-- `spring-boot-starter-web` is deprecated in Spring Boot 4 in favour of `spring-boot-starter-webmvc`; the rename is pending a dedicated task.
-- The architecture guard rail is a source-level import scan, not bytecode analysis; it may be replaced with a bytecode-level tool such as ArchUnit in M14.
-- Built and run on Windows 10 with JDK 21.0.12 and Maven 3.9.16. Other platforms are untested.
----
-
-## License
-
-**Copyright © 2026 Regullacharith. All rights reserved.**
-
-This is **proprietary software**, not open source. The SFS source code, documentation,
-architecture, design materials and original research materials are the property of the
-copyright holder.
-
-No permission is granted to copy, reproduce, redistribute, modify, adapt, translate,
-create derivative works from, publish, distribute, sublicense, sell, commercially exploit,
-or incorporate this project — or substantial portions of it — into another software product
-or service, without prior written permission from the copyright holder.
-
-The copyright holder retains all rights not expressly granted.
-
-**Third-party components.** SFS uses third-party libraries, frameworks and tools that are
-**not** covered by the above notice. Each remains subject to its own license and copyright
-terms; nothing here relicenses third-party material.
-
-**No warranty.** The project is provided "as is", without warranty of any kind, express or
-implied, to the extent permitted by applicable law.
-
-See [`LICENSE`](LICENSE) for the complete and authoritative terms. Where this summary and
-the `LICENSE` file differ, the `LICENSE` file governs.
----
-
+**Preserve meaning. Search memory. Reconstruct when needed.**
