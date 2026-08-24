@@ -10,9 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Verifies the mock service's lifecycle rules.
- */
 @DisplayName("Mock file service")
 class MockFileServiceTest {
 
@@ -102,8 +99,15 @@ class MockFileServiceTest {
     }
 
     @Nested
-    @DisplayName("semantic deletion")
-    class SemanticDeletion {
+    @DisplayName("reversible deletion and purge")
+    class DeletionAndPurge {
+
+        private String analyzedFile() {
+            String id = service.importFile(
+                    new FileImportRequest("notes.txt", "content", null)).objectId();
+            service.requestAnalysis(id);
+            return id;
+        }
 
         @Test
         @DisplayName("refuses deletion before the file has been analyzed")
@@ -111,7 +115,7 @@ class MockFileServiceTest {
             String id = service.importFile(
                     new FileImportRequest("notes.txt", "content", null)).objectId();
 
-            FileOperationResult result = service.requestSemanticDeletion(id);
+            FileOperationResult result = service.softDelete(id);
 
             assertThat(result.successful()).isFalse();
             assertThat(result.message()).contains("refused");
@@ -120,26 +124,75 @@ class MockFileServiceTest {
         }
 
         @Test
-        @DisplayName("removes raw bytes once the file is analyzed")
-        void removesRawDataAfterAnalysis() {
-            String id = service.importFile(
-                    new FileImportRequest("notes.txt", "content", null)).objectId();
-            service.requestAnalysis(id);
+        @DisplayName("moves an analyzed file to the recoverable deleted state")
+        void softDeletesAnalyzedFile() {
+            String id = analyzedFile();
 
-            assertThat(service.requestSemanticDeletion(id).successful()).isTrue();
+            assertThat(service.softDelete(id).successful()).isTrue();
+            assertThat(service.findByObjectId(id).orElseThrow().status())
+                    .isEqualTo(FileStatus.SOFT_DELETED);
+        }
+
+        @Test
+        @DisplayName("keeps raw bytes when a file is deleted")
+        void deletionKeepsRawBytes() {
+            String id = analyzedFile();
+            service.softDelete(id);
+
+            assertThat(service.findByObjectId(id).orElseThrow().status().isRawDataRemoved())
+                    .isFalse();
+        }
+
+        @Test
+        @DisplayName("restores a deleted file")
+        void restoresDeletedFile() {
+            String id = analyzedFile();
+            service.softDelete(id);
+
+            assertThat(service.undoDelete(id).successful()).isTrue();
+            assertThat(service.findByObjectId(id).orElseThrow().status())
+                    .isEqualTo(FileStatus.ANALYZED);
+        }
+
+        @Test
+        @DisplayName("refuses to delete the same file twice")
+        void refusesDoubleDeletion() {
+            String id = analyzedFile();
+            service.softDelete(id);
+
+            assertThat(service.softDelete(id).successful()).isFalse();
+        }
+
+        @Test
+        @DisplayName("refuses to purge a file that was never deleted")
+        void refusesSingleStepPurge() {
+            String id = analyzedFile();
+
+            FileOperationResult result = service.purgeRawData(id);
+
+            assertThat(result.successful()).isFalse();
+            assertThat(service.findByObjectId(id).orElseThrow().status())
+                    .isEqualTo(FileStatus.ANALYZED);
+        }
+
+        @Test
+        @DisplayName("releases raw bytes when a deleted file is purged")
+        void purgeReleasesRawBytes() {
+            String id = analyzedFile();
+            service.softDelete(id);
+
+            assertThat(service.purgeRawData(id).successful()).isTrue();
             assertThat(service.findByObjectId(id).orElseThrow().status())
                     .isEqualTo(FileStatus.MEMORIZED);
         }
 
         @Test
-        @DisplayName("retains the Semantic Record after raw deletion")
-        void retainsRecordAfterDeletion() {
-            String id = service.importFile(
-                    new FileImportRequest("notes.txt", "content", null)).objectId();
-            service.requestAnalysis(id);
-            service.requestSemanticDeletion(id);
+        @DisplayName("retains the Semantic Record after a purge")
+        void retainsRecordAfterPurge() {
+            String id = analyzedFile();
+            service.softDelete(id);
+            service.purgeRawData(id);
 
-            // The defining SFS behaviour: the record survives its raw data.
             assertThat(service.findByObjectId(id)).isPresent();
             assertThat(service.listFiles())
                     .extracting(f -> f.objectId())
@@ -147,14 +200,23 @@ class MockFileServiceTest {
         }
 
         @Test
-        @DisplayName("refuses to delete raw data twice")
-        void refusesDoubleDeletion() {
-            String id = service.importFile(
-                    new FileImportRequest("notes.txt", "content", null)).objectId();
-            service.requestAnalysis(id);
-            service.requestSemanticDeletion(id);
+        @DisplayName("refuses to restore a purged file")
+        void refusesUndoAfterPurge() {
+            String id = analyzedFile();
+            service.softDelete(id);
+            service.purgeRawData(id);
 
-            assertThat(service.requestSemanticDeletion(id).successful()).isFalse();
+            assertThat(service.undoDelete(id).successful()).isFalse();
+        }
+
+        @Test
+        @DisplayName("refuses to purge the same file twice")
+        void refusesDoublePurge() {
+            String id = analyzedFile();
+            service.softDelete(id);
+            service.purgeRawData(id);
+
+            assertThat(service.purgeRawData(id).successful()).isFalse();
         }
     }
 

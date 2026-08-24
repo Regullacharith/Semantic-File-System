@@ -19,7 +19,8 @@ public record FileViewModel(
         String analyzedAt,
         boolean rawDataRemoved,
         boolean canAnalyze,
-        boolean canDelete) {
+        boolean canDelete,
+        boolean canRestore) {
 
     private static final DateTimeFormatter TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
@@ -40,7 +41,8 @@ public record FileViewModel(
                 formatTimestamp(summary.analyzedAt()),
                 summary.status().isRawDataRemoved(),
                 summary.status().allowsAnalysis(),
-                summary.status().allowsSemanticDeletion());
+                summary.status().allowsSoftDeletion(),
+                summary.status().allowsUndoDelete());
     }
 
     static String formatSize(long bytes) {

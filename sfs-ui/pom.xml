@@ -24,12 +24,17 @@
     <dependencies>
         <dependency>
             <groupId>com.sfs</groupId>
+            <artifactId>sfs-app</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sfs</groupId>
             <artifactId>sfs-contracts</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
         <dependency>
@@ -52,7 +57,6 @@
 
     <build>
         <plugins>
-            
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

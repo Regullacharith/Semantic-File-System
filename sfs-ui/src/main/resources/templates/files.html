@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-<!--/*
-    File import, analyze and semantic-deletion controls.
-*/-->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout :: page(~{:: #files-content})}"
       lang="en">
@@ -21,7 +18,6 @@
         semantic deletion are separate, explicit actions.
     </p>
 
-    <!--/* Outcome of the previous action. Always shown, success or failure. */-->
     <div th:if="${resultMessage}"
          th:classappend="${resultSuccess} ? 'alert--success' : 'alert--failure'"
          class="alert"
@@ -90,15 +86,21 @@
                         <button type="submit" class="button">Analyze</button>
                     </form>
 
-                    <!--/*
-                        Semantic deletion removes raw bytes only. It is offered exclusively
-                        when the service reports the record is safe to memorize.
-                    */-->
                     <form th:if="${file.canDelete}"
-                          th:action="@{'/files/' + ${file.objectId} + '/delete-raw'}"
+                          th:action="@{'/files/' + ${file.objectId} + '/delete'}"
                           method="post" class="inline-form">
-                        <button type="submit" class="button button--danger">Delete raw data</button>
+                        <button type="submit" class="button button--danger">Delete</button>
                     </form>
+
+                    <form th:if="${file.canRestore}"
+                          th:action="@{'/files/' + ${file.objectId} + '/undo-delete'}"
+                          method="post" class="inline-form">
+                        <button type="submit" class="button">Restore</button>
+                    </form>
+
+                    <span th:if="${file.canRestore}" class="hint hint--inline">
+                        Raw bytes retained
+                    </span>
 
                     <span th:if="${file.rawDataRemoved}" class="hint hint--inline">
                         Semantic Record retained
