@@ -16,15 +16,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ArchitectureBoundaryTest {
 
     private static final List<String> FORBIDDEN_IMPORTS = List.of(
-            "com.sfs.memory",          // Memory Database       - M08
-            "com.sfs.engine",          // Semantic Engine       - M04
-            "com.sfs.adapters",        // Adapter Framework     - M05
-            "com.sfs.rules",           // Reconstruction Rules  - M07
-            "com.sfs.search",          // Semantic Search       - M09
-            "com.sfs.model",           // Reconstruction Model  - M10
-            "com.sfs.reconstruction",  // Reconstruction Engine - M11
-            "com.sfs.evaluation",      // Evaluation & Fidelity - M12
-            "com.sfs.security",        // Security & Privacy    - M13
+            "com.sfs.memory",          // Memory Database       
+            "com.sfs.engine",          // Semantic Engine      
+            "com.sfs.adapters",        // Adapter Framework    
+            "com.sfs.rules",           // Reconstruction Rules 
+            "com.sfs.search",          // Semantic Search       
+            "com.sfs.model",           // Reconstruction Model 
+            "com.sfs.reconstruction",  // Reconstruction Engine
+            "com.sfs.evaluation",      // Evaluation & Fidelity 
+            "com.sfs.security",        // Security & Privacy    
             "java.sql",                // no direct database access from the UI
             "javax.sql"
     );

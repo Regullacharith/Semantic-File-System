@@ -5,6 +5,8 @@ import java.util.Optional;
 
 public interface FileService {
 
+      List<FileSummary> listFiles();
+      
     Optional<FileSummary> findByObjectId(String objectId);
 
     FileOperationResult importFile(FileImportRequest request);
