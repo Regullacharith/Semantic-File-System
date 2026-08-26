@@ -16,6 +16,7 @@
     <modules>
         <module>sfs-core</module>
         <module>sfs-contracts</module>
+        <module>sfs-app</module>
         <module>sfs-ui</module>
     </modules>
 
@@ -25,10 +26,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- Frozen by decision  -->
         <spring.boot.version>4.1.0</spring.boot.version>
 
-        <!-- Test stack. JUnit 5 + AssertJ. -->
         <junit.jupiter.version>5.11.4</junit.jupiter.version>
         <assertj.version>3.27.3</assertj.version>
 
@@ -38,9 +37,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!--
-                Imported as a BOM rather than used as a parent POM.
-            -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -63,7 +59,6 @@
                 <version>${assertj.version}</version>
             </dependency>
 
-            <!-- Internal module versions, so child modules never hard-code a version. -->
             <dependency>
                 <groupId>com.sfs</groupId>
                 <artifactId>sfs-core</artifactId>
@@ -74,11 +69,15 @@
                 <artifactId>sfs-contracts</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.sfs</groupId>
+                <artifactId>sfs-app</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-        <!-- Test dependencies every module gets. Nothing else is global. -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -109,7 +108,7 @@
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
-                  
+                   
                     <parameters>true</parameters>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>

@@ -17,13 +17,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * In-memory stand-in for the File Lifecycle Manager.
- */
 @Service
 @Profile("mock")
 public class MockFileService implements FileService {
 
+    /** Seeded sample count, kept small so the list view stays readable. */
     private static final int SEED_COUNT = 4;
 
     private final Map<String, FileSummary> filesByObjectId = new ConcurrentHashMap<>();
@@ -99,7 +97,38 @@ public class MockFileService implements FileService {
     }
 
     @Override
-    public FileOperationResult requestSemanticDeletion(String objectId) {
+    public FileOperationResult softDelete(String objectId) {
+        Optional<FileSummary> found = findByObjectId(objectId);
+        if (found.isEmpty()) {
+            return FileOperationResult.failure("No file exists with that Object ID.");
+        }
+
+        FileSummary file = found.get();
+
+        if (file.status() == FileStatus.SOFT_DELETED) {
+            return FileOperationResult.failure("This object is already deleted.");
+        }
+        if (file.status() == FileStatus.MEMORIZED) {
+            return FileOperationResult.failure(
+                    "The raw bytes for this object have already been purged.");
+        }
+
+        if (!file.status().allowsSoftDeletion()) {
+            return FileOperationResult.failure(
+                    "Deletion is refused: the file must be analyzed and its Semantic Record "
+                            + "durably committed first. Current status: "
+                            + file.status().getLabel() + ".");
+        }
+
+        transition(file, FileStatus.SOFT_DELETED);
+
+        return FileOperationResult.success(
+                objectId,
+                "Object deleted. Raw bytes are retained and the object can be restored.");
+    }
+
+    @Override
+    public FileOperationResult undoDelete(String objectId) {
         Optional<FileSummary> found = findByObjectId(objectId);
         if (found.isEmpty()) {
             return FileOperationResult.failure("No file exists with that Object ID.");
@@ -109,27 +138,56 @@ public class MockFileService implements FileService {
 
         if (file.status() == FileStatus.MEMORIZED) {
             return FileOperationResult.failure(
-                    "The raw bytes for this object have already been removed.");
+                    "The raw bytes have been purged. Purging is irreversible, so this object "
+                            + "cannot be restored.");
         }
-
-        if (!file.status().allowsSemanticDeletion()) {
+        if (!file.status().allowsUndoDelete()) {
             return FileOperationResult.failure(
-                    "Semantic deletion is refused: the file must be analyzed and its Semantic "
-                            + "Record durably committed before raw bytes can be removed. "
+                    "This object is not deleted, so there is nothing to restore. "
                             + "Current status: " + file.status().getLabel() + ".");
         }
 
-        filesByObjectId.put(objectId, new FileSummary(
-                file.objectId(),
-                file.displayName(),
-                FileStatus.MEMORIZED,
-                file.sizeBytes(),
-                file.registeredAt(),
-                file.analyzedAt()));
+        transition(file, FileStatus.ANALYZED);
+
+        return FileOperationResult.success(objectId, "Object restored. Raw bytes are intact.");
+    }
+
+    @Override
+    public FileOperationResult purgeRawData(String objectId) {
+        Optional<FileSummary> found = findByObjectId(objectId);
+        if (found.isEmpty()) {
+            return FileOperationResult.failure("No file exists with that Object ID.");
+        }
+
+        FileSummary file = found.get();
+
+        if (file.status() == FileStatus.MEMORIZED) {
+            return FileOperationResult.failure(
+                    "The raw bytes for this object have already been purged.");
+        }
+        if (!file.status().allowsPurge()) {
+            return FileOperationResult.failure(
+                    "Purge is refused: an object must be deleted before its raw bytes can be "
+                            + "permanently released. Current status: "
+                            + file.status().getLabel() + ".");
+        }
+
+        transition(file, FileStatus.MEMORIZED);
 
         return FileOperationResult.success(
                 objectId,
-                "Raw bytes removed. The Semantic Record survives and remains searchable.");
+                "Raw bytes permanently released. The Semantic Record survives and remains "
+                        + "searchable. This cannot be undone.");
+    }
+
+    private void transition(FileSummary file, FileStatus target) {
+        filesByObjectId.put(file.objectId(), new FileSummary(
+                file.objectId(),
+                file.displayName(),
+                target,
+                file.sizeBytes(),
+                file.registeredAt(),
+                file.analyzedAt()));
     }
 
     private String nextObjectId() {

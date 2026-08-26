@@ -39,7 +39,6 @@ public class FileController {
 
     private final FileService fileService;
 
-
     public FileController(FileService fileService) {
         this.fileService = fileService;
     }
@@ -107,10 +106,16 @@ public class FileController {
         return redirectWith(redirectAttributes, fileService.requestAnalysis(objectId));
     }
 
-    @PostMapping("/files/{objectId}/delete-raw")
-    public String deleteRawData(@PathVariable String objectId,
-                                RedirectAttributes redirectAttributes) {
-        return redirectWith(redirectAttributes, fileService.requestSemanticDeletion(objectId));
+    @PostMapping("/files/{objectId}/delete")
+    public String softDelete(@PathVariable String objectId,
+                             RedirectAttributes redirectAttributes) {
+        return redirectWith(redirectAttributes, fileService.softDelete(objectId));
+    }
+
+    @PostMapping("/files/{objectId}/undo-delete")
+    public String undoDelete(@PathVariable String objectId,
+                             RedirectAttributes redirectAttributes) {
+        return redirectWith(redirectAttributes, fileService.undoDelete(objectId));
     }
 
     private String redirectWith(RedirectAttributes redirectAttributes, FileOperationResult result) {

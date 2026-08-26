@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfs</groupId>
+        <artifactId>sfs-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sfs-app</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SFS Application and API</name>
+    <description>
+        Application services and the REST API. Orchestrates domain subsystems on behalf of
+        callers and exposes every V1 operation over HTTP so the system is usable without the
+        UI. Milestone 02 owns this module.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-contracts</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

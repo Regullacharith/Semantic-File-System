@@ -33,9 +33,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-/**
- * Verifies the file controls: listing, import, analyze and semantic deletion.
- */
 @WebMvcTest(FileController.class)
 @DisplayName("File controls")
 class FileControllerTest {
@@ -96,10 +93,9 @@ class FileControllerTest {
         given(fileService.listFiles())
                 .willReturn(List.of(summary("sfs-obj-0001", "fresh.txt", FileStatus.REGISTERED)));
 
-        // A REGISTERED file has no committed Semantic Record, so no delete control appears.
         mockMvc.perform(get("/files"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(not(containsString("delete-raw"))))
+                .andExpect(content().string(not(containsString("/purge"))))
                 .andExpect(content().string(containsString("analyze")));
     }
 
@@ -139,7 +135,6 @@ class FileControllerTest {
     @Test
     @DisplayName("rejects non-UTF-8 content rather than misclassifying it as text")
     void rejectsNonUtf8Content() throws Exception {
-        // Invalid UTF-8 byte sequence. so this must be refused cleanly.
         var binary = new MockMultipartFile("file", "image.txt", "text/plain",
                 new byte[]{(byte) 0xFF, (byte) 0xFE, (byte) 0xFF, (byte) 0xFE});
 
@@ -186,11 +181,11 @@ class FileControllerTest {
     @Test
     @DisplayName("surfaces a refused semantic deletion as an explicit failure")
     void surfacesRefusedDeletion() throws Exception {
-        given(fileService.requestSemanticDeletion(eq("sfs-obj-0001")))
+        given(fileService.softDelete(eq("sfs-obj-0001")))
                 .willReturn(FileOperationResult.failure(
-                        "Semantic deletion is refused: the file must be analyzed first."));
+                        "Deletion is refused: the file must be analyzed first."));
 
-        mockMvc.perform(post("/files/sfs-obj-0001/delete-raw"))
+        mockMvc.perform(post("/files/sfs-obj-0001/delete"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attribute("resultSuccess", false))
                 .andExpect(flash().attribute("resultMessage", containsString("refused")));
@@ -202,11 +197,15 @@ class FileControllerTest {
         mockMvc.perform(get("/files/sfs-obj-0001/analyze"))
                 .andExpect(status().is4xxClientError());
 
-        mockMvc.perform(get("/files/sfs-obj-0001/delete-raw"))
+        mockMvc.perform(get("/files/sfs-obj-0001/delete"))
+                .andExpect(status().is4xxClientError());
+
+        mockMvc.perform(get("/files/sfs-obj-0001/undo-delete"))
                 .andExpect(status().is4xxClientError());
 
         verify(fileService, never()).requestAnalysis(any());
-        verify(fileService, never()).requestSemanticDeletion(any());
+        verify(fileService, never()).softDelete(any());
+        verify(fileService, never()).purgeRawData(any());
     }
 
     @Test
