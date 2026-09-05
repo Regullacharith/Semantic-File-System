@@ -104,3 +104,4 @@ public record SemanticFile(
         return versions.getLast();
     }
 }
+

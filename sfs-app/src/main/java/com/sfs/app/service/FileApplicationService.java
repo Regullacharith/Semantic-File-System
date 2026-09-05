@@ -4,7 +4,10 @@ import com.sfs.app.api.request.FileImportApiRequest;
 import com.sfs.app.api.response.FileResponse;
 import com.sfs.app.api.response.OperationResponse;
 import com.sfs.app.api.response.SemanticRecordResponse;
+import com.sfs.app.api.response.LifecycleEventResponse;
+import com.sfs.app.api.response.LifecycleStatisticsResponse;
 import com.sfs.contracts.file.FileImportRequest;
+import com.sfs.contracts.lifecycle.LifecycleAuditService;
 import com.sfs.contracts.file.FileOperationResult;
 import com.sfs.contracts.file.FileService;
 import com.sfs.contracts.file.FileSummary;
@@ -25,11 +28,13 @@ public class FileApplicationService {
     private final SemanticRecordService semanticRecordService;
     private final AuthenticationService authenticationService;
     private final AuthorizationService authorizationService;
+    private final LifecycleAuditService lifecycleAuditService;
 
     public FileApplicationService(FileService fileService,
                                   SemanticRecordService semanticRecordService,
                                   AuthenticationService authenticationService,
-                                  AuthorizationService authorizationService) {
+                                  AuthorizationService authorizationService,
+                                  LifecycleAuditService lifecycleAuditService) {
         this.fileService = Objects.requireNonNull(fileService, "fileService must not be null");
         this.semanticRecordService =
                 Objects.requireNonNull(semanticRecordService, "semanticRecordService must not be null");
@@ -37,6 +42,8 @@ public class FileApplicationService {
                 authenticationService, "authenticationService must not be null");
         this.authorizationService = Objects.requireNonNull(
                 authorizationService, "authorizationService must not be null");
+        this.lifecycleAuditService = Objects.requireNonNull(
+                lifecycleAuditService, "lifecycleAuditService must not be null");
     }
 
     public List<FileResponse> listFiles() {
@@ -77,6 +84,13 @@ public class FileApplicationService {
         return OperationResponse.from(result);
     }
 
+    /**
+     * Reversibly deletes an object.
+     *
+     * <p>The four checks run in a fixed order — authenticate, authorize, confirm, then validate
+     * the lifecycle — so a caller learns "you are not permitted" before any detail about the
+     * object's existence or state, and no destructive path can skip a check by throwing later.
+     */
     public OperationResponse softDelete(String objectId,
                                         String credential,
                                         DeletionConfirmation confirmation) {
@@ -89,13 +103,20 @@ public class FileApplicationService {
 
         if (!file.status().allowsSoftDeletion()) {
             throw ApplicationException.invalidState(
-                    "Deletion requires an analyzed object. The object is currently "
-                            + file.status().getLabel() + ".");
+                    "Reversible deletion is not available from this state. The object is "
+                            + "currently " + file.status().getLabel() + ".");
         }
 
-        return execute(fileService.softDelete(file.objectId()));
+        return execute(fileService.softDelete(file.objectId(), principal));
     }
 
+    /**
+     * Restores a soft-deleted object.
+     *
+     * <p>Requires authentication and authorization but no confirmation: restoring destroys
+     * nothing, and demanding confirmation for a safe, corrective action trains callers to
+     * confirm reflexively, which weakens confirmation where it matters.
+     */
     public OperationResponse undoDelete(String objectId, String credential) {
         Principal principal = requirePrincipal(credential);
         requireCapability(principal, Capability.UNDO_DELETE);
@@ -108,9 +129,16 @@ public class FileApplicationService {
                             + file.status().getLabel() + ".");
         }
 
-        return execute(fileService.undoDelete(file.objectId()));
+        return execute(fileService.undoDelete(file.objectId(), principal));
     }
 
+    /**
+     * Permanently releases the raw bytes of a soft-deleted object.
+     *
+     * <p>Requires the separate {@link Capability#PURGE_RAW} capability. Holding
+     * {@code DELETE_RAW} is not sufficient, because withdrawing an object and destroying it
+     * irrecoverably are different levels of trust.
+     */
     public OperationResponse purgeRawData(String objectId,
                                           String credential,
                                           DeletionConfirmation confirmation) {
@@ -128,7 +156,40 @@ public class FileApplicationService {
                             + file.status().getLabel() + ".");
         }
 
-        return execute(fileService.purgeRawData(file.objectId()));
+        return execute(fileService.purgeRawData(file.objectId(), principal));
+    }
+
+    public OperationResponse memorize(String objectId, String credential) {
+        Principal principal = requirePrincipal(credential);
+        requireCapability(principal, Capability.MEMORIZE);
+
+        FileSummary file = requireFile(objectId);
+
+        if (!file.status().allowsMemorize()) {
+            throw ApplicationException.invalidState(
+                    "Memorization requires an analyzed object. The object is currently "
+                            + file.status().getLabel() + ".");
+        }
+
+        return execute(fileService.memorize(file.objectId(), principal));
+    }
+
+    public List<LifecycleEventResponse> lifecycleEvents(String objectId, String credential) {
+        Principal principal = requirePrincipal(credential);
+        requireCapability(principal, Capability.READ);
+
+        FileSummary file = requireFile(objectId);
+
+        return lifecycleAuditService.eventsFor(file.objectId()).stream()
+                .map(LifecycleEventResponse::from)
+                .toList();
+    }
+
+    public LifecycleStatisticsResponse lifecycleStatistics(String credential) {
+        Principal principal = requirePrincipal(credential);
+        requireCapability(principal, Capability.READ);
+
+        return LifecycleStatisticsResponse.from(lifecycleAuditService.statistics());
     }
 
     private Principal requirePrincipal(String credential) {

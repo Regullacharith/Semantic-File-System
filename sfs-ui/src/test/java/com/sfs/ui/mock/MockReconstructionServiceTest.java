@@ -4,7 +4,12 @@ import com.sfs.contracts.reconstruction.ReconstructionArtifact;
 import com.sfs.contracts.reconstruction.ReconstructionJobView;
 import com.sfs.contracts.reconstruction.ReconstructionJobView.ConstraintFinding;
 import com.sfs.contracts.reconstruction.ReconstructionStatus;
+import com.sfs.lifecycle.core.FileLifecycleManager;
+import com.sfs.lifecycle.identity.ObjectIdService;
+import com.sfs.lifecycle.store.InMemoryRawContentStore;
 import org.junit.jupiter.api.BeforeEach;
+
+import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,9 +18,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Verifies the reconstruction pipeline's behavioural contracts.
- */
 @DisplayName("Mock reconstruction service")
 class MockReconstructionServiceTest {
 
@@ -26,11 +28,14 @@ class MockReconstructionServiceTest {
     private static final String PROTECTED_OBJECT = "sfs-obj-0004-b3c4d5e6";
 
     private MockReconstructionService service;
-    private MockFileService fileService;
+    private FileLifecycleManager fileService;
 
     @BeforeEach
-    void setUp() {
-        fileService = new MockFileService();
+    void setUp() throws Exception {
+        fileService = new FileLifecycleManager(Clock.systemUTC(),
+                new InMemoryRawContentStore(), DevDataSeeder.scriptedObjectIdService(), null);
+        new StubAnalysisEngine(fileService);
+        new DevDataSeeder(fileService).run(null);
         service = new MockReconstructionService(fileService, new MockSemanticRecordService());
     }
 
