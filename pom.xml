@@ -16,6 +16,7 @@
     <modules>
         <module>sfs-core</module>
         <module>sfs-contracts</module>
+        <module>sfs-lifecycle</module>
         <module>sfs-app</module>
         <module>sfs-ui</module>
     </modules>
@@ -37,6 +38,7 @@
 
     <dependencyManagement>
         <dependencies>
+           
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -67,6 +69,11 @@
             <dependency>
                 <groupId>com.sfs</groupId>
                 <artifactId>sfs-contracts</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sfs</groupId>
+                <artifactId>sfs-lifecycle</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -108,7 +115,7 @@
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
-                   
+                  
                     <parameters>true</parameters>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
@@ -121,7 +128,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
-                    
+                
                     <useSystemClassLoader>false</useSystemClassLoader>
                 </configuration>
             </plugin>

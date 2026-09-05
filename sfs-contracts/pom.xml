@@ -17,8 +17,7 @@
     <name>SFS Contracts</name>
     <description>
         Service interfaces and request/response models shared between the UI and the
-        backend subsystems. Milestone 02 owns the contents of this module; Milestone 01
-        introduces only the minimum contracts its seven views require.
+        backend subsystems.
     </description>
 
    

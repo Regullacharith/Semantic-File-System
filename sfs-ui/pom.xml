@@ -16,7 +16,7 @@
 
     <name>SFS UI</name>
     <description>
-        Lightweight server-rendered web UI. View models, controllers, templates and
+       server-rendered web UI. View models, controllers, templates and
         mock service implementations. Contains NO semantic, persistence, reconstruction,
         evaluation or security logic.
     </description>

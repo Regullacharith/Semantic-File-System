@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaType="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -11,15 +11,22 @@
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>sfs-app</artifactId>
+    <artifactId>sfs-lifecycle</artifactId>
     <packaging>jar</packaging>
 
-    <name>SFS Application and API</name>
+    <name>SFS Lifecycle</name>
     <description>
-        Application services and the REST API.
+        File Lifecycle Manager subsystem: FileState machine, file
+        registration, Object ID service, version tracking, memorize operation,
+        semantic deletion protocol, raw-file deletion gate and lifecycle audit.
+        Implements com.sfs.contracts.file.FileService.
     </description>
 
     <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.sfs</groupId>
             <artifactId>sfs-contracts</artifactId>

@@ -16,13 +16,12 @@
 
     <name>SFS Core</name>
     <description>
-        Pure domain model. Object ID, Semantic DNA types, lifecycle types, domain exceptions.
-        Milestones 03 and 06 own the contents of this module.
+        Pure domain model. Object ID, Semantic DNA types, domain exceptions.
+       The lifecycle types live in the sfs-lifecycle
+        module;
     </description>
 
-   
     <dependencies>
     </dependencies>
 
 </project>
-
