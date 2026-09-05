@@ -12,9 +12,6 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Verifies the presentation projection of a file summary.
- */
 @DisplayName("FileViewModel")
 class FileViewModelTest {
 
@@ -70,6 +67,7 @@ class FileViewModelTest {
 
         assertThat(model.canAnalyze()).isTrue();
         assertThat(model.canDelete()).isFalse();
+        assertThat(model.canMemorize()).isFalse();
         assertThat(model.rawDataRemoved()).isFalse();
     }
 
@@ -80,7 +78,19 @@ class FileViewModelTest {
                 summary(FileStatus.ANALYZED, 100, Instant.now()));
 
         assertThat(model.canDelete()).isTrue();
+        assertThat(model.canMemorize()).isTrue();
         assertThat(model.canAnalyze()).isFalse();
+    }
+
+    @Test
+    @DisplayName("offers memorization only before memory is committed")
+    void gatesMemorizeForMemoryCommittedFile() {
+        FileViewModel model = FileViewModel.from(
+                summary(FileStatus.MEMORY_COMMITTED, 100, Instant.now()));
+
+        assertThat(model.canMemorize()).isFalse();
+        assertThat(model.canDelete()).isTrue();
+        assertThat(model.rawDataRemoved()).isFalse();
     }
 
     @Test
@@ -92,5 +102,6 @@ class FileViewModelTest {
         assertThat(model.rawDataRemoved()).isTrue();
         assertThat(model.canAnalyze()).isFalse();
         assertThat(model.canDelete()).isFalse();
+        assertThat(model.canMemorize()).isFalse();
     }
 }

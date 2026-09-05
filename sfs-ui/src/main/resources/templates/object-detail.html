@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-<!--/*
-    Semantic DNA inspection for one object.
-*/-->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout :: page(~{:: #object-content})}"
       lang="en">
@@ -41,6 +38,12 @@
             <dt>Analyzed</dt>
             <dd th:text="${file.analyzedAt}">—</dd>
         </dl>
+
+        <form th:if="${file.canMemorize}"
+              th:action="@{'/files/' + ${file.objectId} + '/memorize'}"
+              method="post" class="inline-form">
+            <button type="submit" class="button">Memorize</button>
+        </form>
 
         <p th:if="${file.rawDataRemoved}" class="alert alert--success" role="status">
             The raw file has been deleted. Everything below is what SFS retained.

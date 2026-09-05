@@ -84,13 +84,6 @@ public class FileApplicationService {
         return OperationResponse.from(result);
     }
 
-    /**
-     * Reversibly deletes an object.
-     *
-     * <p>The four checks run in a fixed order — authenticate, authorize, confirm, then validate
-     * the lifecycle — so a caller learns "you are not permitted" before any detail about the
-     * object's existence or state, and no destructive path can skip a check by throwing later.
-     */
     public OperationResponse softDelete(String objectId,
                                         String credential,
                                         DeletionConfirmation confirmation) {
@@ -110,13 +103,6 @@ public class FileApplicationService {
         return execute(fileService.softDelete(file.objectId(), principal));
     }
 
-    /**
-     * Restores a soft-deleted object.
-     *
-     * <p>Requires authentication and authorization but no confirmation: restoring destroys
-     * nothing, and demanding confirmation for a safe, corrective action trains callers to
-     * confirm reflexively, which weakens confirmation where it matters.
-     */
     public OperationResponse undoDelete(String objectId, String credential) {
         Principal principal = requirePrincipal(credential);
         requireCapability(principal, Capability.UNDO_DELETE);
@@ -132,13 +118,6 @@ public class FileApplicationService {
         return execute(fileService.undoDelete(file.objectId(), principal));
     }
 
-    /**
-     * Permanently releases the raw bytes of a soft-deleted object.
-     *
-     * <p>Requires the separate {@link Capability#PURGE_RAW} capability. Holding
-     * {@code DELETE_RAW} is not sufficient, because withdrawing an object and destroying it
-     * irrecoverably are different levels of trust.
-     */
     public OperationResponse purgeRawData(String objectId,
                                           String credential,
                                           DeletionConfirmation confirmation) {

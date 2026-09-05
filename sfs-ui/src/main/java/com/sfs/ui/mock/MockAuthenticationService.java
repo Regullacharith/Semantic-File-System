@@ -19,11 +19,11 @@ public class MockAuthenticationService implements AuthenticationService {
             "reader", new Principal("dev-reader", "Development Reader",
                     Set.of(Capability.READ)),
             "operator", new Principal("dev-operator", "Development Operator",
-                    Set.of(Capability.READ, Capability.WRITE,
+                    Set.of(Capability.READ, Capability.WRITE, Capability.MEMORIZE,
                             Capability.DELETE_RAW, Capability.UNDO_DELETE)),
             "custodian", new Principal("dev-custodian", "Development Data Custodian",
-                    Set.of(Capability.READ, Capability.WRITE, Capability.DELETE_RAW,
-                            Capability.UNDO_DELETE, Capability.PURGE_RAW)));
+                    Set.of(Capability.READ, Capability.WRITE, Capability.MEMORIZE,
+                            Capability.DELETE_RAW, Capability.UNDO_DELETE, Capability.PURGE_RAW)));
 
     @Override
     public Optional<Principal> authenticate(String credential) {
