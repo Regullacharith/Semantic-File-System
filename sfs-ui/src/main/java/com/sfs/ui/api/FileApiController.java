@@ -115,6 +115,14 @@ public class FileApiController {
         return fileApplicationService.undoDelete(objectId, credential);
     }
 
+    @PostMapping("/files/{objectId}/memorize")
+    public OperationResponse memorize(
+            @PathVariable String objectId,
+            @RequestHeader(name = AUTH_HEADER, required = false) String credential) {
+
+        return fileApplicationService.memorize(objectId, credential);
+    }
+
     @PostMapping("/files/{objectId}/purge")
     public OperationResponse purgeRawData(
             @PathVariable String objectId,
@@ -125,6 +133,14 @@ public class FileApiController {
                 objectId,
                 credential,
                 request == null ? null : request.toConfirmation());
+    }
+
+    @GetMapping("/files/{objectId}/events")
+    public java.util.List<com.sfs.app.api.response.LifecycleEventResponse> lifecycleEvents(
+            @PathVariable String objectId,
+            @RequestHeader(name = AUTH_HEADER, required = false) String credential) {
+
+        return fileApplicationService.lifecycleEvents(objectId, credential);
     }
 
     @GetMapping("/objects/{objectId}/dna")

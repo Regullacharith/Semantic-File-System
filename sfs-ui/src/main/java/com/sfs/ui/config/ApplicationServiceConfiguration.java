@@ -6,6 +6,7 @@ import com.sfs.app.service.ReconstructionApplicationService;
 import com.sfs.app.service.SearchApplicationService;
 import com.sfs.app.service.SecurityApplicationService;
 import com.sfs.contracts.evaluation.EvaluationService;
+import com.sfs.contracts.lifecycle.LifecycleAuditService;
 import com.sfs.contracts.security.AuthenticationService;
 import com.sfs.contracts.security.AuthorizationService;
 import com.sfs.contracts.file.FileService;
@@ -24,10 +25,18 @@ public class ApplicationServiceConfiguration {
             FileService fileService,
             SemanticRecordService semanticRecordService,
             AuthenticationService authenticationService,
-            AuthorizationService authorizationService) {
+            AuthorizationService authorizationService,
+            LifecycleAuditService lifecycleAuditService) {
 
         return new FileApplicationService(
-                fileService, semanticRecordService, authenticationService, authorizationService);
+                fileService, semanticRecordService, authenticationService, authorizationService,
+                lifecycleAuditService);
+    }
+
+    @Bean
+    public LifecycleAuditService lifecycleAuditService(
+            com.sfs.lifecycle.core.FileLifecycleManager fileLifecycleManager) {
+        return new com.sfs.lifecycle.audit.LifecycleAuditAdapter(fileLifecycleManager.auditLog());
     }
 
     @Bean

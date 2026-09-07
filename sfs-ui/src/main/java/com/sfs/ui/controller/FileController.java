@@ -3,6 +3,8 @@ package com.sfs.ui.controller;
 import com.sfs.contracts.file.FileImportRequest;
 import com.sfs.contracts.file.FileOperationResult;
 import com.sfs.contracts.file.FileService;
+import com.sfs.contracts.security.Capability;
+import com.sfs.contracts.security.Principal;
 import com.sfs.ui.view.FileViewModel;
 import com.sfs.ui.view.NavigationItem;
 import com.sfs.ui.view.PageViewModel;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 @Controller
 public class FileController {
@@ -36,6 +39,10 @@ public class FileController {
     private static final String ATTR_RESULT_SUCCESS = "resultSuccess";
 
     private static final long MAX_UPLOAD_BYTES = 5L * 1024 * 1024;
+
+    private static final Principal UI_PRINCIPAL =
+            new Principal("ui-dev", "Local development interface",
+                    Set.of(Capability.DELETE_RAW, Capability.UNDO_DELETE));
 
     private final FileService fileService;
 
@@ -109,13 +116,19 @@ public class FileController {
     @PostMapping("/files/{objectId}/delete")
     public String softDelete(@PathVariable String objectId,
                              RedirectAttributes redirectAttributes) {
-        return redirectWith(redirectAttributes, fileService.softDelete(objectId));
+        return redirectWith(redirectAttributes, fileService.softDelete(objectId, UI_PRINCIPAL));
+    }
+
+    @PostMapping("/files/{objectId}/memorize")
+    public String memorize(@PathVariable String objectId,
+                           RedirectAttributes redirectAttributes) {
+        return redirectWith(redirectAttributes, fileService.memorize(objectId, UI_PRINCIPAL));
     }
 
     @PostMapping("/files/{objectId}/undo-delete")
     public String undoDelete(@PathVariable String objectId,
                              RedirectAttributes redirectAttributes) {
-        return redirectWith(redirectAttributes, fileService.undoDelete(objectId));
+        return redirectWith(redirectAttributes, fileService.undoDelete(objectId, UI_PRINCIPAL));
     }
 
     private String redirectWith(RedirectAttributes redirectAttributes, FileOperationResult result) {

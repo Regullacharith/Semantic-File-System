@@ -92,6 +92,12 @@
                         <button type="submit" class="button button--danger">Delete</button>
                     </form>
 
+                    <form th:if="${file.canMemorize}"
+                          th:action="@{'/files/' + ${file.objectId} + '/memorize'}"
+                          method="post" class="inline-form">
+                        <button type="submit" class="button">Memorize</button>
+                    </form>
+
                     <form th:if="${file.canRestore}"
                           th:action="@{'/files/' + ${file.objectId} + '/undo-delete'}"
                           method="post" class="inline-form">

@@ -14,6 +14,7 @@ import com.sfs.contracts.security.AuthorizationService;
 import com.sfs.contracts.security.Capability;
 import com.sfs.contracts.security.Principal;
 import com.sfs.contracts.semantic.SemanticDnaView;
+import com.sfs.contracts.lifecycle.LifecycleAuditService;
 import com.sfs.contracts.semantic.SemanticRecordService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -56,7 +57,8 @@ class FileApplicationServiceTest {
                 fileService,
                 new StubSemanticRecordService(),
                 new StubAuthenticationService(),
-                new StubAuthorizationService());
+                new StubAuthorizationService(),
+                new StubLifecycleAuditService());
     }
 
     private static DeletionConfirmation confirm(String objectId) {
@@ -399,12 +401,74 @@ class FileApplicationServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("memorization")
+    class Memorization {
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {"   ", "unknown-caller"})
+        @DisplayName("rejects memorization without a valid credential")
+        void rejectsUnauthenticatedMemorization(String credential) {
+            assertThatThrownBy(() -> service.memorize(ANALYZED_ID, credential))
+                    .isInstanceOf(ApplicationException.class)
+                    .extracting(FileApplicationServiceTest::codeOf)
+                    .isEqualTo(ApiErrorCode.AUTHENTICATION_REQUIRED);
+        }
+
+        @Test
+        @DisplayName("rejects memorization for a principal without the capability")
+        void rejectsUnauthorizedMemorization() {
+            assertThatThrownBy(() -> service.memorize(ANALYZED_ID, READER))
+                    .isInstanceOf(ApplicationException.class)
+                    .extracting(FileApplicationServiceTest::codeOf)
+                    .isEqualTo(ApiErrorCode.NOT_PERMITTED);
+
+            assertThat(fileService.memorizes).isEmpty();
+        }
+
+        @Test
+        @DisplayName("memorizes an analyzed object for an authorized principal")
+        void memorizesAnalyzedObject() {
+            var response = service.memorize(ANALYZED_ID, OPERATOR);
+
+            assertThat(response.successful()).isTrue();
+            assertThat(fileService.memorizes).containsExactly(ANALYZED_ID);
+        }
+
+        @Test
+        @DisplayName("refuses memorization for a registered object")
+        void refusesMemorizationOfRegisteredObject() {
+            assertThatThrownBy(() -> service.memorize(REGISTERED_ID, OPERATOR))
+                    .isInstanceOf(ApplicationException.class)
+                    .extracting(FileApplicationServiceTest::codeOf)
+                    .isEqualTo(ApiErrorCode.INVALID_STATE_TRANSITION);
+
+            assertThat(fileService.memorizes).isEmpty();
+        }
+    }
+
+    private static final class StubLifecycleAuditService implements LifecycleAuditService {
+
+        @Override
+        public List<com.sfs.contracts.lifecycle.LifecycleAuditEntry> eventsFor(String objectId) {
+            return List.of();
+        }
+
+        @Override
+        public com.sfs.contracts.lifecycle.LifecycleStatistics statistics() {
+            return new com.sfs.contracts.lifecycle.LifecycleStatistics(
+                    0, Map.of(), 0, 0, 0, 0, 0, null, null, null, null);
+        }
+    }
+
     private static final class StubFileService implements FileService {
 
         private final Map<String, FileSummary> files = new LinkedHashMap<>();
         private final List<String> analysisRequests = new ArrayList<>();
         private final List<String> softDeletes = new ArrayList<>();
         private final List<String> purges = new ArrayList<>();
+        private final List<String> memorizes = new ArrayList<>();
         private final List<String> lookups = new ArrayList<>();
 
         private StubFileService() {
@@ -451,20 +515,27 @@ class FileApplicationServiceTest {
         }
 
         @Override
-        public FileOperationResult softDelete(String objectId) {
+        public FileOperationResult memorize(String objectId, Principal principal) {
+            memorizes.add(objectId);
+            transition(objectId, FileStatus.MEMORY_COMMITTED);
+            return FileOperationResult.success(objectId, "Semantic memory committed.");
+        }
+
+        @Override
+        public FileOperationResult softDelete(String objectId, Principal principal) {
             softDeletes.add(objectId);
             transition(objectId, FileStatus.SOFT_DELETED);
             return FileOperationResult.success(objectId, "Deleted. Raw bytes retained.");
         }
 
         @Override
-        public FileOperationResult undoDelete(String objectId) {
+        public FileOperationResult undoDelete(String objectId, Principal principal) {
             transition(objectId, FileStatus.ANALYZED);
             return FileOperationResult.success(objectId, "Restored.");
         }
 
         @Override
-        public FileOperationResult purgeRawData(String objectId) {
+        public FileOperationResult purgeRawData(String objectId, Principal principal) {
             purges.add(objectId);
             transition(objectId, FileStatus.MEMORIZED);
             return FileOperationResult.success(objectId, "Raw bytes released.");
@@ -484,12 +555,12 @@ class FileApplicationServiceTest {
                         "reader", "Reader", Set.of(Capability.READ)));
                 case OPERATOR -> Optional.of(new Principal(
                         "operator", "Operator",
-                        Set.of(Capability.READ, Capability.WRITE,
+                        Set.of(Capability.READ, Capability.WRITE, Capability.MEMORIZE,
                                 Capability.DELETE_RAW, Capability.UNDO_DELETE)));
                 case CUSTODIAN -> Optional.of(new Principal(
                         "custodian", "Custodian",
-                        Set.of(Capability.READ, Capability.WRITE, Capability.DELETE_RAW,
-                                Capability.UNDO_DELETE, Capability.PURGE_RAW)));
+                        Set.of(Capability.READ, Capability.WRITE, Capability.MEMORIZE,
+                                Capability.DELETE_RAW, Capability.UNDO_DELETE, Capability.PURGE_RAW)));
                 default -> Optional.empty();
             };
         }

@@ -2,6 +2,7 @@ package com.sfs.ui.controller;
 
 import com.sfs.contracts.file.FileOperationResult;
 import com.sfs.contracts.file.FileService;
+import com.sfs.contracts.security.Principal;
 import com.sfs.contracts.file.FileStatus;
 import com.sfs.contracts.file.FileSummary;
 import org.junit.jupiter.api.DisplayName;
@@ -181,7 +182,7 @@ class FileControllerTest {
     @Test
     @DisplayName("surfaces a refused semantic deletion as an explicit failure")
     void surfacesRefusedDeletion() throws Exception {
-        given(fileService.softDelete(eq("sfs-obj-0001")))
+        given(fileService.softDelete(eq("sfs-obj-0001"), any(Principal.class)))
                 .willReturn(FileOperationResult.failure(
                         "Deletion is refused: the file must be analyzed first."));
 
@@ -204,8 +205,8 @@ class FileControllerTest {
                 .andExpect(status().is4xxClientError());
 
         verify(fileService, never()).requestAnalysis(any());
-        verify(fileService, never()).softDelete(any());
-        verify(fileService, never()).purgeRawData(any());
+        verify(fileService, never()).softDelete(any(), any());
+        verify(fileService, never()).purgeRawData(any(), any());
     }
 
     @Test

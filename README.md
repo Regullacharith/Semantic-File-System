@@ -4,7 +4,7 @@
 
 The central idea is to preserve the **meaning, structure, identity, facts, entities, and relationships** associated with a file so that its semantic representation can remain useful independently of the original raw data.
 
-SFS V1 currently operates with a **text-file scope** and provides a lightweight web interface together with an application and API boundary.
+The current implementation focuses on a **text-file scope** and provides a lightweight web interface backed by explicit application and API contracts.
 
 ---
 
@@ -63,7 +63,7 @@ The long-term purpose of this model is to allow semantic information to remain a
 
 ---
 
-# Architecture
+## Architecture
 
 SFS is organized into distinct subsystems with explicit dependency boundaries.
 
@@ -110,9 +110,9 @@ The architecture separates interface concerns, application orchestration, semant
 
 ---
 
-# User / Interface Layer
+## User / Interface Layer
 
-The user interface provides a  web interface for interacting with SFS.
+The user interface provides a lightweight web interface for interacting with SFS.
 
 The current UI includes:
 
@@ -133,7 +133,7 @@ The interface is intentionally lightweight rather than being a heavy client appl
 
 ---
 
-# Application & API Layer
+## Application & API Layer
 
 The **Application & API Layer** establishes the application boundary between the user interface and SFS services.
 
@@ -205,7 +205,7 @@ Business operations are not placed exclusively inside controllers.
 
 ## File Lifecycle Boundary
 
-The application/API layer defines the lifecycle boundary for file operations:
+The application/API layer delegates file lifecycle behavior to the `sfs-lifecycle` module. The lifecycle separates analysis, semantic-memory commitment, reversible deletion, and permanent raw-data release:
 
 ```text
 REGISTERED
@@ -213,29 +213,91 @@ REGISTERED
     ▼
 ANALYZING
     │
-    ▼
+        ├──────────────► FAILED
+        │                  │
+        │                  └──────────────► ANALYZING
+        │
+        ▼
 ANALYZED
     │
-    │ authenticated
-    │ authorized
-    │ confirmed
+    ├──────────────► MEMORIZABLE ─────► MEMORY_COMMITTED
+    │
+    └── authenticated, authorized, confirmed ──► SOFT_DELETED
+    │
+    ├──► UNDO ──► ANALYZED
+    │
+    └──► AUTHORIZED PURGE
+    │
     ▼
-SOFT_DELETED
-    │
-    ├──────────────► UNDO
-    │                  │
-    │                  ▼
-    │               ANALYZED
-    │
-    └──────────────► AUTHORIZED PURGE
-                         │
-                         ▼
-                     MEMORIZED
+ MEMORIZED
 ```
 
-Normal deletion is reversible.
+`MEMORIZED` is terminal: the semantic record remains while raw data is no longer present. Interrupted memorization can be recovered by returning the object from `MEMORIZABLE` to `ANALYZED`.
 
-Permanent raw-data removal is a separate purge operation.
+Normal deletion is reversible. Permanent raw-data removal is a separate purge operation controlled by the raw-deletion gate.
+
+## `sfs-lifecycle` Module
+
+The lifecycle module is the subsystem responsible for the file state machine and lifecycle operations. It implements the shared `FileService` contract and depends on `sfs-core` and `sfs-contracts`.
+
+```text
+sfs-lifecycle/src/main/java/com/sfs/lifecycle/
+├── core/
+│   ├── FileLifecycleManager
+│   └── AnalysisDispatcher
+├── state/
+│   ├── FileState
+│   ├── LifecycleStateMachine
+│   └── IllegalLifecycleTransitionException
+├── model/
+│   ├── SemanticFile
+│   ├── FileMetadata
+│   ├── FileVersion
+│   ├── ContentDigest
+│   ├── LifecycleEvent
+│   ├── LifecycleEventType
+│   └── DeletionPolicy
+├── identity/
+│   └── ObjectIdService
+├── gate/
+│   └── RawDeletionGate
+├── audit/
+│   ├── LifecycleAuditLog
+│   └── LifecycleAuditAdapter
+└── store/
+        ├── RawContentStore
+        └── InMemoryRawContentStore
+```
+
+### Lifecycle Responsibilities
+
+- Register text files and assign stable Object IDs
+- Store raw content separately from semantic file metadata
+- Track file metadata, content digests, and versions
+- Enforce legal lifecycle transitions
+- Dispatch and complete semantic analysis
+- Record certified semantic DNA versions
+- Commit semantic memory through an explicit intermediate state
+- Support reversible soft deletion and undo
+- Gate permanent raw-data release
+- Retain the semantic record after raw-data purge
+- Record lifecycle events, refusals, actors, reasons, and operation timing
+- Recover interrupted memorization operations
+
+### Lifecycle State Model
+
+The module defines these states:
+
+| State | Meaning |
+|---|---|
+| `REGISTERED` | The file has an Object ID and retained raw content, but analysis has not started. |
+| `ANALYZING` | Semantic analysis is in progress. |
+| `ANALYZED` | Analysis completed and the semantic representation is available. |
+| `MEMORIZABLE` | The semantic record has passed validation and is ready for memory commitment. |
+| `MEMORY_COMMITTED` | Semantic memory has been committed while raw content remains available. |
+| `SOFT_DELETED` | The file is logically deleted but can still be restored. |
+| `MEMORIZED` | Raw content has been released and the semantic record remains. |
+| `FAILED` | Analysis failed and may be retried through the state machine. |
 
 ---
 
@@ -277,7 +339,7 @@ Error responses do not expose sensitive request data or plaintext protected valu
 
 ---
 
-# Core Concepts
+## Core Concepts
 
 ## Object ID
 
@@ -347,7 +409,7 @@ This makes deletion a lifecycle operation rather than simply removing an object 
 
 ---
 
-# Security and Sensitive Data
+## Security and Sensitive Data
 
 Semantic representations can contain sensitive information.
 
@@ -379,7 +441,7 @@ Passwords are treated as non-reconstructable values rather than ordinary semanti
 
 ---
 
-# Current Text Scope
+## Current Text Scope
 
 The current file scope is intentionally restricted to text:
 
@@ -392,7 +454,7 @@ The text boundary is based on the content being processed as text rather than tr
 
 ---
 
-# Core Design Principles
+## Core Design Principles
 
 ### 1. Semantic information is first-class
 
@@ -424,7 +486,7 @@ Controllers, application services, contracts, and backend services have distinct
 
 ---
 
-# Repository Structure
+## Repository Structure
 
 ```text
 Semantic-File-System/
@@ -434,6 +496,15 @@ Semantic-File-System/
 │
 ├── sfs-contracts/
 │   └── Shared service contracts
+│
+├── sfs-lifecycle/
+│   ├── File lifecycle manager
+│   ├── Lifecycle state machine
+│   ├── Object ID and version tracking
+│   ├── Raw-data deletion gate
+│   ├── Lifecycle audit log
+│   ├── Raw-content store
+│   └── Lifecycle tests
 │
 ├── sfs-app/
 │   ├── Application services
@@ -463,7 +534,7 @@ Semantic-File-System/
 
 ---
 
-# Technology
+## Technology
 
 ## Primary Language
 
@@ -482,7 +553,7 @@ Semantic-File-System/
 
 ---
 
-# Build
+## Build
 
 The project requires Java 21.
 
@@ -506,7 +577,7 @@ mvn clean package
 
 ---
 
-# Running the Application
+## Running the Application
 
 From the project root:
 
@@ -518,7 +589,7 @@ The web interface is available through the configured Spring Boot application po
 
 ---
 
-# Testing
+## Testing
 
 The project contains tests for:
 
@@ -546,32 +617,7 @@ Tests are intended to enforce both functional behavior and architectural boundar
 
 ---
 
-# Implementation Status
-
-The current repository contains the implemented:
-
-- User / Interface Layer
-- Application & API Layer
-- Shared contracts
-- Application services
-- Request/response models
-- Validation
-- Error model
-- Object ID handling
-- Lifecycle operation boundaries
-- Authentication and authorization contracts
-- Destructive-operation confirmation
-- Reversible deletion
-- Permanent purge boundary
-- UI integration with application-facing services
-- Mock service implementations
-- Automated tests
-
-The semantic, memory, reconstruction, evaluation, and security concepts are represented through explicit interfaces and application boundaries where their complete subsystem implementation is not part of the current codebase.
-
----
-
-# Project Structure at Runtime
+## Project Structure at Runtime
 
 ```text
 Browser
@@ -597,19 +643,7 @@ This structure keeps the UI independent from direct dependencies on backend impl
 
 ---
 
-# Project Status
-
-```text
-SFS V1
-│
-├── User / Interface Layer          DEVELOPED
-├── Application / API Layer         DEVELOPED
-```
-
-**SFS V1 is incomplete until the planned stages have been completed and verified.**
-
----
-# License
+## License
 
 Copyright © 2026 Regullacharith
 

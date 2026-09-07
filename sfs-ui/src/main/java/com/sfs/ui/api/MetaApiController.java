@@ -1,6 +1,7 @@
 package com.sfs.ui.api;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -10,6 +11,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1")
 public class MetaApiController {
+
+    private final com.sfs.app.service.FileApplicationService fileApplicationService;
+
+    public MetaApiController(com.sfs.app.service.FileApplicationService fileApplicationService) {
+        this.fileApplicationService = fileApplicationService;
+    }
+
 
     private static final String API_VERSION = "v1";
     private static final String CONTRACTS_VERSION = "0.1";
@@ -23,6 +31,12 @@ public class MetaApiController {
                 "timestamp", Instant.now().toString());
     }
 
+    @GetMapping("/meta/lifecycle")
+    public com.sfs.app.api.response.LifecycleStatisticsResponse lifecycleStatistics(
+            @RequestHeader(name = "X-SFS-Credential", required = false) String credential) {
+        return fileApplicationService.lifecycleStatistics(credential);
+    }
+
     @GetMapping("/version")
     public Map<String, Object> version() {
         return Map.of(
@@ -30,9 +44,11 @@ public class MetaApiController {
                 "contractsVersion", CONTRACTS_VERSION,
                 "dnaSchemaVersion", DNA_SCHEMA_VERSION,
                 "rulesVersion", RULES_VERSION,
-                "milestone", "M02 — Application & API Layer",
-                "enforcedSubsystems", java.util.List.of(),
-                "note", "All domain subsystems are mocked in V1. "
-                        + "Search, reconstruction, evaluation and security are not yet implemented.");
+                "phase", " File Lifecycle Manager",
+                "enforcedSubsystems", java.util.List.of("file-lifecycle"),
+                "note", "The file lifecycle manager is the real subsystem. "
+                        + "Analysis is a development stub; search, reconstruction and "
+                        + "evaluation are mocked. Security boundaries are enforced with "
+                        + "development identities in security .");
     }
 }

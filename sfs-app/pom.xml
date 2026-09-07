@@ -16,9 +16,7 @@
 
     <name>SFS Application and API</name>
     <description>
-        Application services and the REST API. Orchestrates domain subsystems on behalf of
-        callers and exposes every V1 operation over HTTP so the system is usable without the
-        UI. Milestone 02 owns this module.
+        Application services and the REST API.
     </description>
 
     <dependencies>

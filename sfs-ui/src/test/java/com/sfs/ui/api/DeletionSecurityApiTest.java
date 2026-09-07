@@ -78,6 +78,14 @@ class DeletionSecurityApiTest {
         return objectId;
     }
 
+    private String memorizedObject() throws Exception {
+        String objectId = analyzedObject();
+        HttpResponse<String> memorized =
+                send("POST", "/api/v1/files/" + objectId + "/memorize", CUSTODIAN, null);
+        assertThat(memorized.statusCode()).isEqualTo(200);
+        return objectId;
+    }
+
     private String statusOf(String objectId) throws Exception {
         return send("GET", "/api/v1/files/" + objectId, null, null).body();
     }
@@ -162,7 +170,7 @@ class DeletionSecurityApiTest {
         @Test
         @DisplayName("permits a purge to a caller holding the purge capability")
         void permitsAuthorizedPurge() throws Exception {
-            String objectId = analyzedObject();
+            String objectId = memorizedObject();
             send("DELETE", "/api/v1/files/" + objectId, CUSTODIAN, confirmBody(objectId));
 
             HttpResponse<String> response = send(
@@ -252,7 +260,7 @@ class DeletionSecurityApiTest {
         @Test
         @DisplayName("purge releases raw bytes and keeps the semantic record")
         void purgeReleasesRawBytes() throws Exception {
-            String objectId = analyzedObject();
+            String objectId = memorizedObject();
             send("DELETE", "/api/v1/files/" + objectId, CUSTODIAN, confirmBody(objectId));
             send("POST", "/api/v1/files/" + objectId + "/purge", CUSTODIAN, confirmBody(objectId));
 
@@ -277,7 +285,7 @@ class DeletionSecurityApiTest {
         @Test
         @DisplayName("refuses to restore an object after purge")
         void refusesUndoAfterPurge() throws Exception {
-            String objectId = analyzedObject();
+            String objectId = memorizedObject();
             send("DELETE", "/api/v1/files/" + objectId, CUSTODIAN, confirmBody(objectId));
             send("POST", "/api/v1/files/" + objectId + "/purge", CUSTODIAN, confirmBody(objectId));
 

@@ -3,15 +3,17 @@ package com.sfs.ui.mock;
 import com.sfs.contracts.evaluation.EvaluationAvailability;
 import com.sfs.contracts.evaluation.FidelityDimension;
 import com.sfs.contracts.evaluation.FidelityReportView;
+import com.sfs.lifecycle.core.FileLifecycleManager;
+import com.sfs.lifecycle.identity.ObjectIdService;
+import com.sfs.lifecycle.store.InMemoryRawContentStore;
 import org.junit.jupiter.api.BeforeEach;
+
+import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Verifies the mock evaluator rules.
- */
 @DisplayName("Mock evaluation service")
 class MockEvaluationServiceTest {
 
@@ -25,8 +27,11 @@ class MockEvaluationServiceTest {
     private MockEvaluationService service;
 
     @BeforeEach
-    void setUp() {
-        MockFileService fileService = new MockFileService();
+    void setUp() throws Exception {
+        FileLifecycleManager fileService = new FileLifecycleManager(Clock.systemUTC(),
+                new InMemoryRawContentStore(), DevDataSeeder.scriptedObjectIdService(), null);
+        new StubAnalysisEngine(fileService);
+        new DevDataSeeder(fileService).run(null);
         reconstructionService = new MockReconstructionService(
                 fileService, new MockSemanticRecordService());
         service = new MockEvaluationService(reconstructionService, fileService);

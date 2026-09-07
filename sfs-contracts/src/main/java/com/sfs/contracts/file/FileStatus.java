@@ -8,12 +8,15 @@ public enum FileStatus {
 
     ANALYZED("Analyzed", "Semantic DNA has been produced and validated.", false),
 
+    MEMORY_COMMITTED("Memory committed",
+            "Semantic memory is durably committed. Raw bytes are retained and may now be "
+                    + "released only through the deletion protocol.", false),
+
    
     SOFT_DELETED("Deleted (recoverable)",
             "Withdrawn from normal use. Raw bytes are retained and the object can be restored.",
             false),
 
-    
     MEMORIZED("Memorized", "Raw bytes removed; the Semantic Record survives and is searchable.", true),
 
     FAILED("Failed", "Semantic analysis failed; no usable Semantic DNA exists.", false);
@@ -41,6 +44,10 @@ public enum FileStatus {
     }
 
     public boolean allowsSoftDeletion() {
+        return this == ANALYZED || this == MEMORY_COMMITTED;
+    }
+
+    public boolean allowsMemorize() {
         return this == ANALYZED;
     }
 

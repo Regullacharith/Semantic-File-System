@@ -10,6 +10,8 @@ public enum Capability {
 
     UNDO_DELETE("Undo deletion"),
 
+    MEMORIZE("Memorize (commit semantic memory)"),
+
     PURGE_RAW("Purge raw data (permanent)");
 
     private final String label;
