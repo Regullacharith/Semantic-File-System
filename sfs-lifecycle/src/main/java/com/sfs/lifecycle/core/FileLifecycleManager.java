@@ -66,6 +66,22 @@ public final class FileLifecycleManager implements FileService {
         return auditLog;
     }
 
+    public List<String> requeueInterruptedAnalyses() {
+        List<String> requeued = new java.util.ArrayList<>();
+        for (Map.Entry<String, SemanticFile> entry : filesByObjectId.entrySet()) {
+            if (entry.getValue().state() == FileState.ANALYZING) {
+                audit(entry.getKey(), LifecycleEventType.ANALYSIS_REQUEUED,
+                        FileState.ANALYZING, FileState.ANALYZING, SYSTEM_PRINCIPAL,
+                        false, "analysis requeued after restart", null);
+                if (analysisDispatcher != null) {
+                    analysisDispatcher.dispatch(entry.getKey());
+                }
+                requeued.add(entry.getKey());
+            }
+        }
+        return requeued;
+    }
+
     public int recoverInterruptedMemorizations() {
         int recovered = 0;
         for (Map.Entry<String, SemanticFile> entry : filesByObjectId.entrySet()) {
@@ -80,6 +96,10 @@ public final class FileLifecycleManager implements FileService {
             }
         }
         return recovered;
+    }
+
+    private static String analyzingObjectId(SemanticFile file) {
+        return file.objectId().value();
     }
 
     void adopt(SemanticFile file) {
@@ -138,19 +158,40 @@ public final class FileLifecycleManager implements FileService {
                             + presentationLabel(file) + ".");
         }
         SemanticFile analyzing = apply(file, LifecycleEventType.ANALYSIS_STARTED, SYSTEM_PRINCIPAL);
-        if (analysisDispatcher != null) {
-            analysisDispatcher.dispatch(analyzing.objectId().value());
+        String analyzingId = analyzing.objectId().value();
+        String jobId = analysisDispatcher == null ? null : analysisDispatcher.dispatch(analyzingId);
+        if (analysisDispatcher != null && jobId == null) {
+            String reason = "The semantic engine could not accept the analysis request. "
+                    + "Try again when the engine is ready.";
+            completeAnalysisFailure(analyzingId, reason);
+            return FileOperationResult.failure(reason);
         }
-        return FileOperationResult.success(analyzing.objectId().value(),
+        if (jobId != null) {
+            audit(analyzingId, LifecycleEventType.ANALYSIS_STARTED, FileState.ANALYZING,
+                    FileState.ANALYZING, SYSTEM_PRINCIPAL, false,
+                    "analysis job " + jobId + " queued", null);
+        }
+        return FileOperationResult.success(analyzingId,
                 "Semantic analysis started for '" + analyzing.metadata().fileName() + "'.");
     }
 
     public void completeAnalysisSuccess(String objectId, String dnaVersion) {
+        completeAnalysisSuccess(objectId, dnaVersion, null);
+    }
+
+    public void completeAnalysisSuccess(String objectId, String dnaVersion, Long durationMs) {
         Objects.requireNonNull(dnaVersion, "dnaVersion must not be null");
         SemanticFile file = requireExisting(objectId);
-        SemanticFile analyzed = apply(file, LifecycleEventType.ANALYSIS_SUCCEEDED, SYSTEM_PRINCIPAL)
+        FileState target = stateMachine.requireTarget(file.state(),
+                LifecycleEventType.ANALYSIS_SUCCEEDED);
+        SemanticFile analyzed = file.withState(target, clock.instant())
                 .withCertifiedDna(dnaVersion, clock.instant());
         filesByObjectId.put(objectId, analyzed);
+        String reason = durationMs == null
+                ? null
+                : "analysis completed in " + durationMs + " ms";
+        audit(objectId, LifecycleEventType.ANALYSIS_SUCCEEDED, file.state(), target,
+                SYSTEM_PRINCIPAL, false, reason, durationMs);
     }
 
     public void completeAnalysisFailure(String objectId, String reason) {
@@ -342,6 +383,16 @@ public final class FileLifecycleManager implements FileService {
 
     private SemanticFile apply(SemanticFile before, LifecycleEventType event, String principalId) {
         return apply(before, event, principalId, null);
+    }
+
+    private SemanticFile applyWithReason(SemanticFile before, LifecycleEventType event,
+                                         String principalId, String reason) {
+        FileState target = stateMachine.requireTarget(before.state(), event);
+        SemanticFile after = transitioned(before, target);
+        filesByObjectId.put(before.objectId().value(), after);
+        audit(before.objectId().value(), event, before.state(), target, principalId,
+                false, reason, null);
+        return after;
     }
 
     private SemanticFile apply(SemanticFile before, LifecycleEventType event,

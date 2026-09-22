@@ -52,7 +52,13 @@ public class ReconstructionApplicationService {
     }
 
     public JobStatusResponse getJob(String jobId) {
-        return JobStatusResponse.from(requireJob(jobId));
+        String validated = JobId.validate(jobId);
+        return reconstructionService.findJob(validated)
+                .map(JobStatusResponse::from)
+                .or(() -> jobRegistry.find(validated)
+                        .filter(record -> JobRegistry.TYPE_ANALYSIS.equals(record.jobType()))
+                        .map(JobStatusResponse::fromAnalysisRecord))
+                .orElseThrow(ApplicationException::jobNotFound);
     }
 
     public ReconstructionArtifact getArtifact(String jobId) {

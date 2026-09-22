@@ -19,6 +19,7 @@ public final class LifecycleStateMachine {
         legalSourceStates.put(LifecycleEventType.ANALYSIS_SUCCEEDED, Set.of(FileState.ANALYZING));
         legalSourceStates.put(LifecycleEventType.ANALYSIS_FAILED, Set.of(FileState.ANALYZING));
         legalSourceStates.put(LifecycleEventType.ANALYSIS_REFUSED, allStates());
+        legalSourceStates.put(LifecycleEventType.ANALYSIS_REQUEUED, Set.of(FileState.ANALYZING));
         legalSourceStates.put(LifecycleEventType.MEMORY_COMMIT_REQUESTED, Set.of(FileState.ANALYZED));
         legalSourceStates.put(LifecycleEventType.DNA_VALIDATED, Set.of(FileState.ANALYZED));
         legalSourceStates.put(LifecycleEventType.MEMORY_COMMITTED, Set.of(FileState.MEMORIZABLE));
@@ -76,6 +77,7 @@ public final class LifecycleStateMachine {
         return switch (event) {
             case REGISTRATION_RECORDED -> FileState.REGISTERED;
             case ANALYSIS_STARTED -> FileState.ANALYZING;
+            case ANALYSIS_REQUEUED -> FileState.ANALYZING;
             case ANALYSIS_SUCCEEDED -> FileState.ANALYZED;
             case ANALYSIS_FAILED -> FileState.FAILED;
             case MEMORY_COMMIT_REQUESTED -> from;
