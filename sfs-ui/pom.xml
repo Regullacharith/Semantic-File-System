@@ -34,6 +34,11 @@
 
         <dependency>
             <groupId>com.sfs</groupId>
+            <artifactId>sfs-engine</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sfs</groupId>
             <artifactId>sfs-contracts</artifactId>
         </dependency>
 
@@ -62,7 +67,6 @@
 
     <build>
         <plugins>
-           
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
