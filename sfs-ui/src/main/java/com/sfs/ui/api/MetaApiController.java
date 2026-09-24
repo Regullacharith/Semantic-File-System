@@ -44,11 +44,11 @@ public class MetaApiController {
                 "contractsVersion", CONTRACTS_VERSION,
                 "dnaSchemaVersion", DNA_SCHEMA_VERSION,
                 "rulesVersion", RULES_VERSION,
-                "phase", " File Lifecycle Manager",
-                "enforcedSubsystems", java.util.List.of("file-lifecycle"),
-                "note", "The file lifecycle manager is the real subsystem. "
-                        + "Analysis is a development stub; search, reconstruction and "
-                        + "evaluation are mocked. Security boundaries are enforced with "
-                        + "development identities in security .");
+                "milestone", " — Semantic Engine",
+                "enforcedSubsystems", java.util.List.of("file-lifecycle", "semantic-engine"),
+                "note", "The file lifecycle manager and the semantic engine "
+                        + "subsystems. Search, reconstruction and evaluation are mocked. "
+                        + "Security boundaries are enforced with development identities "
+                        + "until the security .");
     }
 }

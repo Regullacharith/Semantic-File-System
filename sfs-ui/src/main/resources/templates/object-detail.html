@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout :: page(~{:: #object-content})}"
       lang="en">
@@ -53,8 +54,14 @@
     <section th:unless="${hasDna}" class="panel panel--notice">
         <h2 class="panel__heading">No Semantic DNA yet</h2>
         <p>
-            This object has been registered but not analyzed, so no semantic representation
-            exists. Run analysis from the Files screen.
+            <span th:if="${file.status.name() == 'ANALYZING'}">
+                Semantic analysis is running. The semantic representation appears here
+                when the analysis completes.
+            </span>
+            <span th:if="${file.status.name() != 'ANALYZING'}">
+                This object has been registered but not analyzed, so no semantic
+                representation exists. Run analysis from the Files screen.
+            </span>
         </p>
     </section>
 

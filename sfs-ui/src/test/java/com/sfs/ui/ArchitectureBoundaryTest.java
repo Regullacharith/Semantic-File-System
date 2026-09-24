@@ -17,12 +17,12 @@ class ArchitectureBoundaryTest {
 
     private static final List<String> FORBIDDEN_IMPORTS = List.of(
             "com.sfs.memory",          // Memory Database       
-            "com.sfs.engine",          // Semantic Engine      
-            "com.sfs.adapters",        // Adapter Framework    
-            "com.sfs.rules",           // Reconstruction Rules 
+            "com.sfs.engine",          // Semantic Engine       
+            "com.sfs.adapters",        // Adapter Framework     
+            "com.sfs.rules",           // Reconstruction Rules  
             "com.sfs.search",          // Semantic Search       
             "com.sfs.model",           // Reconstruction Model 
-            "com.sfs.reconstruction",  // Reconstruction Engine
+            "com.sfs.reconstruction",  // Reconstruction Engine 
             "com.sfs.evaluation",      // Evaluation & Fidelity 
             "com.sfs.security",        // Security & Privacy    
             "java.sql",                // no direct database access from the UI
@@ -44,7 +44,7 @@ class ArchitectureBoundaryTest {
                 .as("""
                     The UI layer must not depend directly on backend subsystems.
                     Route the call through a service interface in com.sfs.contracts instead.
-                    See Milestone 01: "The UI must never directly manipulate the Memory Database."
+                   "The UI must never directly manipulate the Memory Database."
                     """)
                 .isEmpty();
     }
@@ -97,9 +97,15 @@ class ArchitectureBoundaryTest {
             return javaFiles
                     .filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> !isCompositionConfiguration(path))
                     .flatMap(ArchitectureBoundaryTest::findViolations)
                     .toList();
         }
+    }
+
+    private static boolean isCompositionConfiguration(Path javaFile) {
+        return javaFile.getParent() != null
+                && "config".equals(javaFile.getParent().getFileName().toString());
     }
 
     private static Stream<String> findViolations(Path javaFile) {

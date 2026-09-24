@@ -1,0 +1,15 @@
+# Agenda
+
+The meeting reviewed the delivery order for the migration project.
+
+# Decisions
+
+Milestone 04 delivers the semantic engine for text analysis.
+Milestone 01 precedes Milestone 09 in the delivery order.
+The team must verify each task before the next milestone begins.
+
+# Action Items
+
+Alice will draft the migration plan for the storage platform.
+The plan is due on 2026-09-15.
+Bob hosts the next review meeting.

@@ -16,12 +16,13 @@ class StageAnalyzerTest {
     private static final String DOCUMENT = """
             # Summary
 
-            report reviews the database platform. Query latency
-            decreased by 40 percent after indexing changes were deployed.
+            This report reviews the database platform for Q3 2026. Query latency
+            decreased by 40 percent after indexing changes were deployed in August.
 
             # Measurements
 
             PostgreSQL hosts the production workload for the analytics platform.
+            The reporting period covers Q3 2026.
             """ + "\n";
 
     private SemanticContext context() {

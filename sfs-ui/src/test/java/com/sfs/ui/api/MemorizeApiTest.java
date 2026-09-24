@@ -71,7 +71,23 @@ class MemorizeApiTest {
         HttpResponse<String> analyzed = send("POST", "/api/v1/files/" + objectId + "/analyze",
                 OPERATOR, null);
         assertThat(analyzed.statusCode()).isEqualTo(200);
+        awaitStatus(objectId, "ANALYZED");
         return objectId;
+    }
+
+    private void awaitStatus(String objectId, String expectedStatus) throws Exception {
+        for (int i = 0; i < 300; i++) {
+            HttpResponse<String> file =
+                    send("GET", "/api/v1/files/" + objectId, OPERATOR, null);
+            if (file.body().contains("\"status\":\"" + expectedStatus + "\"")) {
+                return;
+            }
+            Thread.sleep(10);
+        }
+            HttpResponse<String> last =
+                    send("GET", "/api/v1/files/" + objectId, OPERATOR, null);
+        throw new AssertionError("object " + objectId + " never reached " + expectedStatus
+                + "; last status: " + last.body());
     }
 
     @Nested

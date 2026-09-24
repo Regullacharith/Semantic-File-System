@@ -5,11 +5,7 @@ import com.sfs.contracts.reconstruction.ReconstructionJobView;
 import com.sfs.contracts.reconstruction.ReconstructionJobView.ConstraintFinding;
 import com.sfs.contracts.reconstruction.ReconstructionStatus;
 import com.sfs.lifecycle.core.FileLifecycleManager;
-import com.sfs.lifecycle.identity.ObjectIdService;
-import com.sfs.lifecycle.store.InMemoryRawContentStore;
 import org.junit.jupiter.api.BeforeEach;
-
-import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,12 +27,10 @@ class MockReconstructionServiceTest {
     private FileLifecycleManager fileService;
 
     @BeforeEach
-    void setUp() throws Exception {
-        fileService = new FileLifecycleManager(Clock.systemUTC(),
-                new InMemoryRawContentStore(), DevDataSeeder.scriptedObjectIdService(), null);
-        new StubAnalysisEngine(fileService);
-        new DevDataSeeder(fileService).run(null);
-        service = new MockReconstructionService(fileService, new MockSemanticRecordService());
+    void setUp() {
+        var suite = EngineTestSupport.seeded();
+        fileService = suite.lifecycle();
+        service = new MockReconstructionService(fileService, suite.records());
     }
 
     @Nested

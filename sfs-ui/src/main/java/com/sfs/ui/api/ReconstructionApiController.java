@@ -37,7 +37,7 @@ public class ReconstructionApiController {
 
         if (job.refused()) {
             return ResponseEntity
-                    .unprocessableEntity()
+                    .status(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY)
                     .body(job);
         }
 

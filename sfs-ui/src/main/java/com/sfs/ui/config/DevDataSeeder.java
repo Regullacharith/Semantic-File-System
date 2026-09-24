@@ -108,7 +108,7 @@ public class DevDataSeeder implements ApplicationRunner {
         return """
                 # Overview
 
-                document summarizes the semantic file storage research for 2026.
+                This document summarizes the semantic file storage research for 2026.
                 Semantic DNA is stored in the Memory Database after validation.
                 The Vector Index supports semantic search across stored records.
                 Knowledge preservation matters more than byte compression for storage.
@@ -134,7 +134,7 @@ public class DevDataSeeder implements ApplicationRunner {
         return """
                 # Summary
 
-                report reviews the database platform .
+                This report reviews the database platform for Q3 2026.
                 Query latency decreased by 40 percent after indexing changes were deployed.
 
                 # Measurements
