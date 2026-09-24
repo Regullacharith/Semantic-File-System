@@ -5,9 +5,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(2)
 public class LifecycleRecoveryRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(LifecycleRecoveryRunner.class);
@@ -23,6 +25,10 @@ public class LifecycleRecoveryRunner implements ApplicationRunner {
         int recovered = fileLifecycleManager.recoverInterruptedMemorizations();
         if (recovered > 0) {
             log.warn("Rolled back {} interrupted memorization(s) to ANALYZED.", recovered);
+        }
+        int requeued = fileLifecycleManager.requeueInterruptedAnalyses().size();
+        if (requeued > 0) {
+            log.warn("Re-queued {} interrupted analysis job(s).", requeued);
         }
     }
 }

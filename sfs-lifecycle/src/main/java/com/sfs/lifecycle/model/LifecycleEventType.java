@@ -7,6 +7,7 @@ public enum LifecycleEventType {
     ANALYSIS_SUCCEEDED,
     ANALYSIS_FAILED,
     ANALYSIS_REFUSED,
+    ANALYSIS_REQUEUED,
     MEMORY_COMMIT_REQUESTED,
     DNA_VALIDATED,
     MEMORY_COMMITTED,
@@ -24,4 +25,3 @@ public enum LifecycleEventType {
     VERSION_ADD_REFUSED,
     MEMORIZE_INTERRUPTED
 }
-

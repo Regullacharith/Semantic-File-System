@@ -29,6 +29,39 @@ public record JobStatusResponse(
         findings = findings == null ? List.of() : List.copyOf(findings);
     }
 
+    public static JobStatusResponse fromAnalysisRecord(
+            com.sfs.app.service.JobRegistry.JobRecord record) {
+        Objects.requireNonNull(record, "record must not be null");
+        boolean failed = "FAILED".equals(record.status()) || "REJECTED".equals(record.status());
+        return new JobStatusResponse(
+                record.jobId(),
+                record.objectId(),
+                "analysis",
+                record.status(),
+                analysisLabel(record.status()),
+                record.isTerminal(),
+                failed,
+                record.submittedAt(),
+                record.completedAt(),
+                null,
+                false,
+                null,
+                0,
+                List.of(),
+                record.terminationReason());
+    }
+
+    private static String analysisLabel(String status) {
+        return switch (status == null ? "" : status) {
+            case "QUEUED" -> "Queued for analysis";
+            case "RUNNING" -> "Analyzing";
+            case "COMPLETED" -> "Analysis completed";
+            case "FAILED" -> "Analysis failed";
+            case "REJECTED" -> "Analysis rejected";
+            default -> status;
+        };
+    }
+
     public static JobStatusResponse from(ReconstructionJobView job) {
         Objects.requireNonNull(job, "job must not be null");
 

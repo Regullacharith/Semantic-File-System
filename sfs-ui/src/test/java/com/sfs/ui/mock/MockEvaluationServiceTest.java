@@ -3,12 +3,7 @@ package com.sfs.ui.mock;
 import com.sfs.contracts.evaluation.EvaluationAvailability;
 import com.sfs.contracts.evaluation.FidelityDimension;
 import com.sfs.contracts.evaluation.FidelityReportView;
-import com.sfs.lifecycle.core.FileLifecycleManager;
-import com.sfs.lifecycle.identity.ObjectIdService;
-import com.sfs.lifecycle.store.InMemoryRawContentStore;
 import org.junit.jupiter.api.BeforeEach;
-
-import java.time.Clock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,14 +22,11 @@ class MockEvaluationServiceTest {
     private MockEvaluationService service;
 
     @BeforeEach
-    void setUp() throws Exception {
-        FileLifecycleManager fileService = new FileLifecycleManager(Clock.systemUTC(),
-                new InMemoryRawContentStore(), DevDataSeeder.scriptedObjectIdService(), null);
-        new StubAnalysisEngine(fileService);
-        new DevDataSeeder(fileService).run(null);
+    void setUp() {
+        var suite = EngineTestSupport.seeded();
         reconstructionService = new MockReconstructionService(
-                fileService, new MockSemanticRecordService());
-        service = new MockEvaluationService(reconstructionService, fileService);
+                suite.lifecycle(), suite.records());
+        service = new MockEvaluationService(reconstructionService, suite.lifecycle());
     }
 
     @Test

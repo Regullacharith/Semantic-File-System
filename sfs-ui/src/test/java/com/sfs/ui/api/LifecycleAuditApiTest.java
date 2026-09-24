@@ -65,6 +65,18 @@ class LifecycleAuditApiTest {
         return matcher.group();
     }
 
+    private void awaitStatus(String objectId, String expectedStatus) throws Exception {
+        for (int i = 0; i < 300; i++) {
+            HttpResponse<String> file =
+                    send("GET", "/api/v1/files/" + objectId, OPERATOR, null);
+            if (file.body().contains("\"status\":\"" + expectedStatus + "\"")) {
+                return;
+            }
+            Thread.sleep(10);
+        }
+        throw new AssertionError("object " + objectId + " never reached " + expectedStatus);
+    }
+
     @Nested
     @DisplayName("event audit")
     class EventAudit {
@@ -94,6 +106,7 @@ class LifecycleAuditApiTest {
         void importedObjectTrail() throws Exception {
             String objectId = importedObject();
             send("POST", "/api/v1/files/" + objectId + "/analyze", OPERATOR, null);
+            awaitStatus(objectId, "ANALYZED");
             send("POST", "/api/v1/files/" + objectId + "/memorize", OPERATOR, null);
 
             HttpResponse<String> response =

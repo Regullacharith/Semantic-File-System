@@ -35,6 +35,7 @@ public class JobRegistry {
     }
 
     public static final String TYPE_RECONSTRUCTION = "RECONSTRUCTION";
+    public static final String TYPE_ANALYSIS = "ANALYSIS";
 
     private static final String ORPHANED_REASON =
             "The job did not reach a terminal state before the application stopped. "
@@ -57,6 +58,12 @@ public class JobRegistry {
 
         jobs.put(job.jobId(), record);
 
+        return record;
+    }
+
+    public JobRecord register(JobRecord record) {
+        Objects.requireNonNull(record, "record must not be null");
+        jobs.put(record.jobId(), record);
         return record;
     }
 

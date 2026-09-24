@@ -1,0 +1,15 @@
+# Overview
+
+Research notes on semantic embeddings for the search prototype.
+
+# Method
+
+The prototype uses feature hashing to build deterministic embeddings.
+Feature hashing maps every token into a fixed vector space.
+Embeddings support retrieval but do not replace explicit facts.
+
+# Findings
+
+Recall improved by 12 percent after the embedding change.
+The retrieval prototype uses the hashed vector space for search.
+Embeddings support the retrieval quality targets .

@@ -66,6 +66,7 @@ class DeletionSecurityApiTest {
         return "{\"confirmObjectId\":\"" + objectId + "\"}";
     }
 
+    /** Imports a file and analyzes it, returning an object eligible for deletion. */
     private String analyzedObject() throws Exception {
         HttpResponse<String> imported = send("POST", "/api/v1/files", null,
                 "{\"fileName\":\"security-test.txt\",\"content\":\"Content under test.\"}");
@@ -75,7 +76,18 @@ class DeletionSecurityApiTest {
         String objectId = matcher.group();
 
         send("POST", "/api/v1/files/" + objectId + "/analyze", null, null);
+        awaitStatus(objectId, "ANALYZED");
         return objectId;
+    }
+
+    private void awaitStatus(String objectId, String expectedStatus) throws Exception {
+        for (int i = 0; i < 300; i++) {
+            if (statusOf(objectId).contains("\"status\":\"" + expectedStatus + "\"")) {
+                return;
+            }
+            Thread.sleep(10);
+        }
+        throw new AssertionError("object " + objectId + " never reached " + expectedStatus);
     }
 
     private String memorizedObject() throws Exception {
@@ -322,6 +334,7 @@ class DeletionSecurityApiTest {
         @Test
         @DisplayName("the application is configured to bind to loopback")
         void configuredForLoopback() {
+            // Reads the resolved configuration, not the documentation.
             assertThat(environment.getProperty("server.address")).isEqualTo("127.0.0.1");
         }
     }

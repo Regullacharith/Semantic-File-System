@@ -21,9 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * In-memory stand-in for the Reconstruction Engine.
- */
+
 @Service
 @Profile("mock")
 public class MockReconstructionService implements ReconstructionService {

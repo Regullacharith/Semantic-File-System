@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@DisplayName("Milestone 03 acceptance: file lifecycle manager over HTTP")
+@DisplayName("lifecycle-manager acceptance: file lifecycle manager over HTTP")
 class MilestoneThreeAcceptanceTest {
 
     private static final Pattern OBJECT_ID = Pattern.compile("sfs-obj-[0-9]{4}-[a-z0-9]+");
@@ -62,6 +62,24 @@ class MilestoneThreeAcceptanceTest {
         return "{\"confirmObjectId\":\"" + objectId + "\"}";
     }
 
+    private void awaitStatus(String objectId, String expectedStatus) throws Exception {
+        for (int i = 0; i < 300; i++) {
+            HttpResponse<String> file =
+                    send("GET", "/api/v1/files/" + objectId, READER, null);
+            if (file.body().contains("\"status\":\"" + expectedStatus + "\"")) {
+                return;
+            }
+            Thread.sleep(10);
+        }
+        throw new AssertionError("object " + objectId + " never reached " + expectedStatus);
+    }
+
+    private void analyzeAndAwait(String objectId) throws Exception {
+        assertThat(send("POST", "/api/v1/files/" + objectId + "/analyze", OPERATOR, null)
+                .statusCode()).isEqualTo(200);
+        awaitStatus(objectId, "ANALYZED");
+    }
+
     private String importObject(String fileName) throws Exception {
         HttpResponse<String> imported = send("POST", "/api/v1/files", OPERATOR,
                 "{\"fileName\":\"" + fileName + "\",\"content\":\"Milestone three "
@@ -93,8 +111,7 @@ class MilestoneThreeAcceptanceTest {
         assertThat(send("DELETE", "/api/v1/files/" + objectId, OPERATOR, confirmBody(objectId))
                 .statusCode()).isEqualTo(409);
 
-        assertThat(send("POST", "/api/v1/files/" + objectId + "/analyze", OPERATOR, null)
-                .statusCode()).isEqualTo(200);
+        analyzeAndAwait(objectId);
         assertThat(send("POST", "/api/v1/files/" + objectId + "/analyze", OPERATOR, null)
                 .statusCode()).isEqualTo(409);
         assertThat(send("POST", "/api/v1/files/" + objectId + "/undo-delete", OPERATOR, null)
@@ -105,7 +122,7 @@ class MilestoneThreeAcceptanceTest {
     @DisplayName("raw deletion is impossible before the memory commit, and the gated path succeeds")
     void rawDeletionGate() throws Exception {
         String objectId = importObject("gated.txt");
-        send("POST", "/api/v1/files/" + objectId + "/analyze", OPERATOR, null);
+        analyzeAndAwait(objectId);
 
         assertThat(send("POST", "/api/v1/files/" + objectId + "/purge", CUSTODIAN,
                 confirmBody(objectId)).statusCode()).isEqualTo(409);
@@ -136,7 +153,7 @@ class MilestoneThreeAcceptanceTest {
     @DisplayName("a deleted record remains address-independent and auditable")
     void deletedRecordRemainsAddressable() throws Exception {
         String objectId = importObject("purged.txt");
-        send("POST", "/api/v1/files/" + objectId + "/analyze", OPERATOR, null);
+        analyzeAndAwait(objectId);
         send("POST", "/api/v1/files/" + objectId + "/memorize", OPERATOR, null);
         send("DELETE", "/api/v1/files/" + objectId, OPERATOR, confirmBody(objectId));
         send("POST", "/api/v1/files/" + objectId + "/purge", CUSTODIAN, confirmBody(objectId));
@@ -162,7 +179,7 @@ class MilestoneThreeAcceptanceTest {
     @DisplayName("lifecycle statistics expose event counts and captured durations")
     void observabilityCapturesMeasurements() throws Exception {
         String objectId = importObject("observed.txt");
-        send("POST", "/api/v1/files/" + objectId + "/analyze", OPERATOR, null);
+        analyzeAndAwait(objectId);
         send("POST", "/api/v1/files/" + objectId + "/memorize", OPERATOR, null);
 
         HttpResponse<String> stats = send("GET", "/api/v1/meta/lifecycle", READER, null);

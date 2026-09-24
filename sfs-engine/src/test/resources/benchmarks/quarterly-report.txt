@@ -1,0 +1,12 @@
+# Summary
+
+This report reviews the database platform for Q3 2026 . Query latency decreased by 40 percent after indexing changes were deployed.
+
+# Measurements
+
+PostgreSQL hosts the production workload for the analytics platform.
+Query latency improved for every dashboard.
+
+# Recommendations
+
+PostgreSQL provides the primary storage for the analytics platform.
