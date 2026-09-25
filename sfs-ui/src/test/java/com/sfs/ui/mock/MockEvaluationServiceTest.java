@@ -9,13 +9,22 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Verifies the mock evaluator's honesty rules.
+ *
+ * <p>Wired to the real reconstruction, file and semantic mocks so the services are exercised
+ * together as the running application uses them.
+ */
 @DisplayName("Mock evaluation service")
 class MockEvaluationServiceTest {
 
+    /** Memorized: raw bytes deleted, so no comparison is possible. */
     private static final String MEMORIZED_OBJECT = "sfs-obj-0002-e5f6a7b8";
 
+    /** Analyzed with the original still present: measurable. */
     private static final String LIVE_OBJECT = "sfs-obj-0001-a1b2c3d4";
 
+    /** Holds protected values, so reconstruction is rejected and no artifact exists. */
     private static final String REJECTED_OBJECT = "sfs-obj-0004-b3c4d5e6";
 
     private MockReconstructionService reconstructionService;
@@ -25,13 +34,15 @@ class MockEvaluationServiceTest {
     void setUp() {
         var suite = EngineTestSupport.seeded();
         reconstructionService = new MockReconstructionService(
-                suite.lifecycle(), suite.records());
+                suite.lifecycle(), suite.records(), suite.records(), suite.planner());
         service = new MockEvaluationService(reconstructionService, suite.lifecycle());
     }
 
     @Test
     @DisplayName("refuses to score a reconstruction whose original was deleted")
     void refusesToScoreWithoutAnOriginal() {
+        // The case most likely to tempt a fabricated number: the reconstruction succeeded,
+        // but there is no original left to measure it against.
         String jobId = reconstructionService.requestReconstruction(MEMORIZED_OBJECT).jobId();
 
         EvaluationAvailability evaluation = service.findEvaluation(jobId);
@@ -84,6 +95,8 @@ class MockEvaluationServiceTest {
     @Test
     @DisplayName("shows a factual shortfall alongside a strong semantic score")
     void surfacesFactualShortfall() {
+        // The fixture is deliberately shaped this way: a report where semantic quality is
+        // high and factual fidelity is not is exactly what an aggregate score would hide.
         String jobId = reconstructionService.requestReconstruction(LIVE_OBJECT).jobId();
         FidelityReportView report = service.findEvaluation(jobId).reportIfAvailable().orElseThrow();
 

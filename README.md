@@ -1,58 +1,50 @@
 # Semantic File System (SFS)
 
-SFS is a Java 21, multi-module Maven project that models files as semantic objects rather than as raw byte containers alone. The repository currently focuses on text documents, a lifecycle-aware file model, searchable semantic metadata, and a Spring Boot web application that exposes both UI and API endpoints.
+SFS is a Java 21, multi-module Maven project that models files as semantic objects, not just raw byte containers. The repository is structured as a layered prototype for semantic file lifecycle, text-adapter processing, and a Spring Boot web application with a server-rendered UI and REST endpoints.
 
-The implementation is intentionally structured around explicit boundaries between:
-
-- domain and identity logic
-- service contracts
-- file-type adapter resolution and text normalization
-- lifecycle management
-- semantic analysis and record generation
-- application orchestration
-- UI and API presentation
+This project is intentionally organized around clear boundaries between domain logic, service contracts, lifecycle behavior, semantic analysis, and presentation.
 
 ---
 
-## Why SFS exists
+## Why this project exists
 
-The project treats a file as more than a collection of bytes. A semantic file combines:
+The central idea is that a file can be understood as a combination of:
 
-- logical identity
+- identity and metadata
 - raw content
-- metadata
 - lifecycle state
-- semantic DNA or derived meaning
-- protected/sensitive-value handling
+- semantic meaning or "DNA"
+- security-sensitive value handling
 
-This lets the project track both the file's lifecycle and its meaning independently of the raw storage artifact.
+The design separates the file's physical artifact from its lifecycle and semantic interpretation, so the system can reason about meaning, deletion, and reconstruction without conflating storage and knowledge.
 
 ---
 
-## Project structure
+## Repository layout
 
-This repository is organized as a Maven reactor with the following modules:
+The project is a Maven reactor with the following modules:
 
 ```text
 Semantic-File-System/
 ├── pom.xml
 ├── LICENSE
 ├── README.md
-├── .gitignore
 ├── sfs-core/
-│   └── Domain model and core identity types
+│   └── Domain model and core identity concepts
 ├── sfs-contracts/
-│   └── Shared service contracts for files, search, reconstruction, security, and evaluation
+│   └── Shared interfaces and API contracts
 ├── sfs-lifecycle/
-│   └── Lifecycle state machine, raw-content store, Object IDs, and deletion gates
+│   └── File lifecycle, state transitions, raw-content gating, and memory/deletion rules
 ├── sfs-engine/
-│   └── Semantic analysis pipeline, inspection, cache, and semantic record generation
+│   └── Semantic analysis pipeline and record generation
 ├── sfs-adapters/
-│   └── Adapter SPI, registry, text loading, normalization, and structural parsing
+│   └── Adapter SPI, registry, text loading, normalization, and parsing
 ├── sfs-app/
-│   └── Application services and API request/response models
+│   └── Application services and request/response models
 ├── sfs-ui/
-  └── Spring Boot UI + REST API layer using Thymeleaf and controller-based endpoints
+│   └── Spring Boot UI and REST layer
+└── target/
+    └── Build outputs from Maven
 ```
 
 ---
@@ -61,37 +53,53 @@ Semantic-File-System/
 
 ### sfs-core
 
-Contains the pure domain model for object identity and semantic concepts. This module is kept intentionally small and independent from lifecycle or persistence concerns.
+Contains the foundational domain model for object identity, semantic concepts, and core file abstractions. This module is intentionally kept small and isolated from persistence and UI concerns.
 
 ### sfs-contracts
 
-Defines the shared contracts used across the application, including file operations, lifecycle events, search, reconstruction, evaluation, and security boundaries.
+Defines the shared contracts and interfaces used throughout the system, including lifecycle events, file operations, evaluation, search, reconstruction, and security boundaries.
 
 ### sfs-lifecycle
 
-Implements the file lifecycle model and state transitions for registration, analysis, soft delete, undo, memorize, and raw-data purge. The lifecycle behavior is centered on a state machine and raw-deletion gate.
+Implements lifecycle handling for registration, analysis, validation, soft delete, undo, memory commit, and raw-data purge. This is where the state machine and deletion gates live.
 
 ### sfs-engine
 
-Provides the semantic processing pipeline. It resolves an input adapter, inspects text documents, extracts semantic structure and meaning, caches reusable analysis, and produces semantic record data used by the application layer.
+Provides the semantic processing pipeline: adapter resolution, text inspection, structural extraction, semantic analysis, record generation, and caching.
 
 ### sfs-adapters
 
-Provides the adapter SPI and V1 text adapter. It selects an adapter from file characteristics, safely loads UTF-8 text, normalizes it, and extracts structural information before semantic analysis.
+Contains the adapter SPI and the current text-focused implementation. It loads UTF-8 content, normalizes input, recognizes basic structural hints, and prepares data for semantic processing.
 
 ### sfs-app
 
-Contains application services and API contracts. This layer validates requests, performs authentication and authorization checks, and coordinates lifecycle and semantic operations without exposing backend implementation details directly to the UI.
+Holds application services and boundary logic. This layer coordinates domain operations, validation, authorization checks, and request handling without exposing implementation details directly to the UI.
 
 ### sfs-ui
 
-The runtime application module. It contains the Spring Boot entry point and server-rendered web UI, REST controllers, API handlers, and mock implementations used by the current interface layer.
+The runtime application module. It contains the Spring Boot entry point, Thymeleaf templates, MVC controllers, and the web-facing API surface.
+
+---
+
+## Current capabilities
+
+The project currently focuses on a text-first implementation and supports the following flow:
+
+- import text files
+- validate and normalize document content
+- resolve an adapter based on file characteristics
+- inspect and semantically analyze content
+- maintain file lifecycle state and audit trail
+- support reversible deletion and raw-data purge behavior
+- expose a UI and API for file and semantic operations
+
+The design explicitly models sensitive values and prevents them from being exposed casually through semantic output, search results, or debug surfaces.
 
 ---
 
 ## Lifecycle model
 
-The current implementation uses an auditable state machine for registration, analysis, semantic record validation, memorization, deletion, undo, and raw-data purge. The common successful path is:
+The system uses an auditable state machine to manage how a file evolves over time. The general path is:
 
 ```text
 REGISTERED
@@ -103,49 +111,41 @@ REGISTERED
   -> MEMORIZED
 ```
 
-Analysis can also fail, be refused, or be requeued after interruption. Soft deletion records the prior live state so it can be restored, while purging releases raw content only after the deletion gate is satisfied. `MEMORIZED` is terminal for the raw-data lifecycle; semantic records and audit information remain available according to their service contracts.
+Key lifecycle characteristics:
 
-Important characteristics of the design:
-
-- raw content and semantic metadata are treated separately
-- deletion is reversible by default
-- permanent raw-data removal is controlled as a separate operation
-- semantic records remain usable after authorized raw-data removal
+- raw content and semantic metadata are managed separately
+- deletion is intentionally reversible by default
+- permanent raw-data removal is a separate gated action
+- semantic records can remain usable even after authorized raw-data removal
 - invalid transitions are rejected by the lifecycle state machine
 
 ---
 
 ## API and UI
 
-The application exposes REST endpoints under:
+The application exposes endpoints under:
 
 ```text
 /api/v1
 ```
 
-The Spring Boot application provides a server-rendered Thymeleaf UI and REST endpoints including:
+Core API areas include:
 
-- `GET /api/v1/files` and `POST /api/v1/files` for listing and importing text files
-- `POST /api/v1/files/{objectId}/analyze` for semantic analysis
-- `GET /api/v1/files/{objectId}/events` for lifecycle audit events
-- `DELETE /api/v1/files/{objectId}` and `POST /api/v1/files/{objectId}/undo-delete` for reversible deletion
-- `POST /api/v1/files/{objectId}/memorize` and `/purge` for memory commit and raw-data release
-- `GET /api/v1/objects/{objectId}/dna` for semantic records
-- `GET` or `POST /api/v1/search` for semantic search
-- `/api/v1/reconstructions` for reconstruction jobs and generated artifacts
-- `/api/v1/evaluations` and `/api/v1/security/settings` for evaluation and security views
+- file import and listing
+- file analysis and lifecycle events
+- semantic record retrieval
+- search and reconstruction flows
+- security and evaluation views
 
-Destructive operations require the configured `X-SFS-Credential` header and, where applicable, confirmation of the Object ID. API errors use structured validation, authorization, conflict, payload, and job-status responses.
-
-The UI is built with Spring Boot and Thymeleaf, and it uses contract-driven application services plus mock implementations where deeper backend infrastructure is intentionally not yet implemented.
+The UI is built with Spring Boot and Thymeleaf and uses contract-driven application services. The current implementation is intentionally a prototype and uses mock or in-memory backing behavior where deeper infrastructure has not yet been added.
 
 ---
 
 ## Security and sensitive data
 
-SFS explicitly models sensitive information as a first-class concern. The project is designed to avoid exposing secrets through unrestricted semantic output, logs, search responses, or debug output.
+Sensitive information is treated as a first-class concern. The system is designed to avoid leaking secrets through semantic output, search results, logs, or debug responses.
 
-That includes protections for values such as:
+Examples of protected value types include:
 
 - passwords
 - authentication tokens
@@ -153,37 +153,49 @@ That includes protections for values such as:
 - phone numbers
 - email addresses
 - account identifiers
-- physical addresses
-
-The implementation treats protected values differently from ordinary reconstructable content.
+- addresses
 
 ---
 
-## Current scope and limits
+## Scope and limitations
 
-The V1 codebase targets text-based files only. Imports use UTF-8 text, reject malformed UTF-8, and enforce a 5 MiB limit for multipart uploads. File names are validated as names rather than paths, and browser-provided MIME types are treated as hints instead of authoritative source-of-truth for file interpretation.
+This is a prototype rather than a production-grade filesystem implementation.
 
-The current runtime uses in-memory lifecycle, semantic-record, and job stores. It is a prototype of the domain and application boundaries, not yet a durable production filesystem or persistence layer.
+Current constraints:
+
+- text files only
+- UTF-8 input only
+- strict upload-size limits
+- in-memory stores for lifecycle and semantic data
+- no durable persistence layer yet
+- no kernel-level or OS-backed filesystem integration
+
+The project is best understood as an architectural and domain-model prototype for semantic file processing rather than a full production filesystem.
 
 ---
 
-## Build and test
+## Prerequisites
 
-The project requires Java 21.
+- Java 21
+- Maven 3.9+
 
-Check the Java version:
+Check your Java environment:
 
 ```bash
 java --version
 ```
 
-Run the full test suite:
+---
+
+## Build and test
+
+Run the full test suite from the project root:
 
 ```bash
 mvn clean test
 ```
 
-Create the packaged artifacts:
+Build the project artifacts:
 
 ```bash
 mvn clean package
@@ -193,17 +205,14 @@ mvn clean package
 
 ## Run the application
 
-From the project root, start the UI application with:
+Start the UI application from the repository root:
 
 ```bash
 mvn spring-boot:run -pl sfs-ui
 ```
 
-This builds the required dependent modules and starts the Spring Boot application from the UI module.
+This builds the dependent modules and launches the Spring Boot app from the UI module. The app serves the web UI and exposes the REST API under the `/api/v1` path.
 
-The default web UI is served by the Spring Boot app, and the REST API is available under the `/api/v1` path.
-
----
 ---
 
 ## Technology stack
@@ -211,40 +220,22 @@ The default web UI is served by the Spring Boot app, and the REST API is availab
 - Java 21
 - Maven 3.9.16
 - Spring Boot 4.1.0
-- Thymeleaf
 - Spring MVC / REST
-- JUnit Jupiter 5.11.4
-- AssertJ 3.27.3
-
----
-
-## Notes
-
-This repository is best understood as a structured semantic file system prototype and application boundary model rather than a kernel-level file system or a full production filesystem implementation.
-
-It is designed to demonstrate:
-
-- semantic identity
-- lifecycle management
-- contractual boundaries
-- explicit destructive-operation rules
-- secure handling of sensitive values
-- UI/API separation from core logic
-- adapter-based text ingestion and deterministic semantic analysis
+- Thymeleaf
+- JUnit Jupiter
+- AssertJ
 
 ---
 
 ## License
 
-Copyright © 2026 Regullacharith
+This project is distributed under the terms of the repository license.
 
-All rights reserved.
-
-See [LICENSE](LICENSE) for the full licensing notice.
+See [LICENSE](LICENSE) for full details.
 
 ---
 
-## Semantic File System
+## Project tagline
 
 Preserve meaning. Search memory. Reconstruct when needed.
 

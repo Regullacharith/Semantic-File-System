@@ -43,6 +43,17 @@ public class EngineWiringConfiguration {
     }
 
     @Bean
+    public com.sfs.core.rules.RuleRepository ruleRepository() {
+        return new com.sfs.core.rules.RuleRepository();
+    }
+
+    @Bean
+    public com.sfs.core.rules.ReconstructionPlanner reconstructionPlanner(
+            com.sfs.core.rules.RuleRepository ruleRepository) {
+        return new com.sfs.core.rules.ReconstructionPlanner(ruleRepository);
+    }
+
+    @Bean
     public AdapterRegistry adapterRegistry() {
         AdapterRegistry registry = new AdapterRegistry();
         registry.register(new TextAdapter());

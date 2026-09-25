@@ -16,10 +16,11 @@
 
     <name>SFS Core</name>
     <description>
-        Pure domain model. Object ID and the authoritative Semantic DNA
-        model : schema, identity, profiles, canonical JSON
-        serialization, validation and migration. Lifecycle types live in
-        sfs-lifecycle .
+        Pure domain model. Object ID, the authoritative Semantic DNA
+        model and the declarative Reconstruction Rules
+        System: rule schema, derivation from DNA, conflict
+        detection, version-bound rule storage and reconstruction planning.
+        Lifecycle types live in sfs-lifecycle .
     </description>
 
     <dependencies>

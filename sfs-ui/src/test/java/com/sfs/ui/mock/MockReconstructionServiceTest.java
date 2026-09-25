@@ -30,7 +30,8 @@ class MockReconstructionServiceTest {
     void setUp() {
         var suite = EngineTestSupport.seeded();
         fileService = suite.lifecycle();
-        service = new MockReconstructionService(fileService, suite.records());
+        service = new MockReconstructionService(
+                fileService, suite.records(), suite.records(), suite.planner());
     }
 
     @Nested
