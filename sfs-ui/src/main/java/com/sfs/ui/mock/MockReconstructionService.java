@@ -21,27 +21,33 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-
 @Service
 @Profile("mock")
 public class MockReconstructionService implements ReconstructionService {
 
-    private static final String RULES_VERSION = "sfs-rules/0.1";
+    private static final String LEGACY_RULES_VERSION = "sfs-rules/0.1";
     private static final String MODEL_VERSION = "deterministic-baseline/0.1";
 
     private static final String REJECTING_OBJECT_ID = "sfs-obj-0004-b3c4d5e6";
 
     private final FileService fileService;
     private final SemanticRecordService semanticRecordService;
+    private final com.sfs.engine.record.InMemorySemanticRecordStore semanticRecordStore;
+    private final com.sfs.core.rules.ReconstructionPlanner reconstructionPlanner;
+    private final com.sfs.core.rules.PlanChecker planChecker = new com.sfs.core.rules.PlanChecker();
 
     private final Map<String, ReconstructionJobView> jobsById = new ConcurrentHashMap<>();
     private final Map<String, ReconstructionArtifact> artifactsByJobId = new ConcurrentHashMap<>();
     private final AtomicLong sequence = new AtomicLong();
 
     public MockReconstructionService(FileService fileService,
-                                     SemanticRecordService semanticRecordService) {
+                                     SemanticRecordService semanticRecordService,
+                                     com.sfs.engine.record.InMemorySemanticRecordStore semanticRecordStore,
+                                     com.sfs.core.rules.ReconstructionPlanner reconstructionPlanner) {
         this.fileService = fileService;
         this.semanticRecordService = semanticRecordService;
+        this.semanticRecordStore = semanticRecordStore;
+        this.reconstructionPlanner = reconstructionPlanner;
     }
 
     @Override
@@ -96,7 +102,12 @@ public class MockReconstructionService implements ReconstructionService {
                                           SemanticDnaView dna, Instant now) {
 
         String dnaVersion = dna.schemaVersion() + " v" + dna.dnaVersion();
-        List<ConstraintFinding> findings = verify(dna);
+        com.sfs.core.rules.ReconstructionPlan plan = semanticRecordStore
+                .findStored(dna.objectId())
+                .map(stored -> reconstructionPlanner.plan(stored.dna()))
+                .orElse(null);
+        String rulesVersion = plan == null ? LEGACY_RULES_VERSION : plan.rulesVersion();
+        List<ConstraintFinding> findings = verify(dna, plan);
 
         boolean violated = findings.stream()
                 .anyMatch(f -> f.severity() == ConstraintFinding.Severity.VIOLATION);
@@ -105,7 +116,7 @@ public class MockReconstructionService implements ReconstructionService {
             ReconstructionJobView job = new ReconstructionJobView(
                     jobId, dna.objectId(), file.displayName(),
                     ReconstructionStatus.REJECTED,
-                    dnaVersion, RULES_VERSION, MODEL_VERSION,
+                    dnaVersion, rulesVersion, MODEL_VERSION,
                     now, now, null, 0, findings,
                     "Verification rejected the output: a required constraint was violated. "
                             + "No artifact was produced.");
@@ -113,13 +124,13 @@ public class MockReconstructionService implements ReconstructionService {
             return job;
         }
 
-        String content = render(dna, dnaVersion);
+        String content = render(dna, dnaVersion, rulesVersion);
         String artifactName = artifactName(file.displayName(), jobId);
 
         ReconstructionJobView job = new ReconstructionJobView(
                 jobId, dna.objectId(), file.displayName(),
                 ReconstructionStatus.COMPLETED,
-                dnaVersion, RULES_VERSION, MODEL_VERSION,
+                dnaVersion, rulesVersion, MODEL_VERSION,
                 now, now, artifactName, content.getBytes(java.nio.charset.StandardCharsets.UTF_8).length,
                 findings, null);
 
@@ -130,8 +141,12 @@ public class MockReconstructionService implements ReconstructionService {
         return job;
     }
 
-    private List<ConstraintFinding> verify(SemanticDnaView dna) {
+    private List<ConstraintFinding> verify(SemanticDnaView dna,
+                                            com.sfs.core.rules.ReconstructionPlan plan) {
         List<ConstraintFinding> findings = new ArrayList<>();
+        if (plan != null) {
+            findings.addAll(planFindings(plan, dna));
+        }
 
         long criticalFacts = dna.facts().stream().filter(SemanticDnaView.FactView::critical).count();
         findings.add(new ConstraintFinding(
@@ -169,9 +184,40 @@ public class MockReconstructionService implements ReconstructionService {
         return findings;
     }
 
-    private String render(SemanticDnaView dna, String dnaVersion) {
+    private List<ConstraintFinding> planFindings(com.sfs.core.rules.ReconstructionPlan plan,
+                                                 SemanticDnaView dna) {
+        List<ConstraintFinding> findings = new ArrayList<>();
+        String content = render(dna, dna.schemaVersion() + " v" + dna.dnaVersion(),
+                plan.rulesVersion());
+        com.sfs.core.rules.PlanCompliance compliance = planChecker.check(plan, content);
+
+        findings.add(new ConstraintFinding(
+                compliance.satisfied()
+                        ? ConstraintFinding.Severity.SATISFIED
+                        : ConstraintFinding.Severity.VIOLATION,
+                "Plan rules (" + plan.rulesVersion() + ")",
+                compliance.satisfied()
+                        ? "All declarative rule checks passed: "
+                                + plan.requiredFacts().size() + " required fact(s), "
+                                + plan.requiredEntities().size() + " required entit(ies), "
+                                + plan.requiredRelationships().size()
+                                + " required relationship(s)"
+                                + (plan.sectionOrder().isEmpty()
+                                        ? ""
+                                        : ", " + plan.sectionOrder().size()
+                                                + " section(s) in order") + "."
+                        : "Rule violations: " + String.join("; ", compliance.violations())));
+
+        for (String warning : compliance.warnings()) {
+            findings.add(new ConstraintFinding(
+                    ConstraintFinding.Severity.WARNING, "Plan warning", warning));
+        }
+        return findings;
+    }
+
+    private String render(SemanticDnaView dna, String dnaVersion, String rulesVersion) {
         StringBuilder text = new StringBuilder(ReconstructionArtifact.provenanceHeader(
-                dna.objectId(), dnaVersion, RULES_VERSION, MODEL_VERSION));
+                dna.objectId(), dnaVersion, rulesVersion, MODEL_VERSION));
 
         text.append("SUMMARY\n\n").append(dna.summary()).append("\n\n");
 
@@ -228,7 +274,7 @@ public class MockReconstructionService implements ReconstructionService {
         ReconstructionJobView job = new ReconstructionJobView(
                 jobId, objectId, sourceName,
                 ReconstructionStatus.FAILED,
-                "unavailable", RULES_VERSION, MODEL_VERSION,
+                "unavailable", LEGACY_RULES_VERSION, MODEL_VERSION,
                 now, now, null, 0, List.of(), reason);
 
         jobsById.put(jobId, job);

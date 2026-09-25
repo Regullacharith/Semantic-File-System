@@ -24,7 +24,8 @@ public final class EngineTestSupport {
     public record EngineSuite(
             FileLifecycleManager lifecycle,
             InMemorySemanticRecordStore records,
-            SemanticEngine engine) {
+            SemanticEngine engine,
+            com.sfs.core.rules.ReconstructionPlanner planner) {
     }
 
     private EngineTestSupport() {
@@ -63,6 +64,9 @@ public final class EngineTestSupport {
                     }
                 },
                 Clock.systemUTC());
+        com.sfs.core.rules.ReconstructionPlanner planner =
+                new com.sfs.core.rules.ReconstructionPlanner(
+                        new com.sfs.core.rules.RuleRepository());
         AnalysisDispatcher dispatcher = objectId -> {
             AnalysisJob job = engine.submit(objectId);
             return job.status() == AnalysisJob.Status.REJECTED ? null : job.jobId();
@@ -76,6 +80,6 @@ public final class EngineTestSupport {
         } catch (Exception e) {
             throw new IllegalStateException("seed analysis failed", e);
         }
-        return new EngineSuite(lifecycle, records, engine);
+        return new EngineSuite(lifecycle, records, engine, planner);
     }
 }
