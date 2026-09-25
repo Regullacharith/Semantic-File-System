@@ -6,6 +6,7 @@ The implementation is intentionally structured around explicit boundaries betwee
 
 - domain and identity logic
 - service contracts
+- file-type adapter resolution and text normalization
 - lifecycle management
 - semantic analysis and record generation
 - application orchestration
@@ -46,6 +47,8 @@ Semantic-File-System/
 │   └── Lifecycle state machine, raw-content store, Object IDs, and deletion gates
 ├── sfs-engine/
 │   └── Semantic analysis pipeline, inspection, cache, and semantic record generation
+├── sfs-adapters/
+│   └── Adapter SPI, registry, text loading, normalization, and structural parsing
 ├── sfs-app/
 │   └── Application services and API request/response models
 ├── sfs-ui/
@@ -72,7 +75,11 @@ Implements the file lifecycle model and state transitions for registration, anal
 
 ### sfs-engine
 
-Provides the semantic processing pipeline. It inspects text documents, extracts semantic structure and meaning, and produces semantic record data used by the application layer.
+Provides the semantic processing pipeline. It resolves an input adapter, inspects text documents, extracts semantic structure and meaning, caches reusable analysis, and produces semantic record data used by the application layer.
+
+### sfs-adapters
+
+Provides the adapter SPI and V1 text adapter. It selects an adapter from file characteristics, safely loads UTF-8 text, normalizes it, and extracts structural information before semantic analysis.
 
 ### sfs-app
 
@@ -86,7 +93,7 @@ The runtime application module. It contains the Spring Boot entry point and serv
 
 ## Lifecycle model
 
-The current implementation follows a lifecycle flow for text files, including analysis, semantic record validation, memoization, deletion, undo, and purge operations.
+The current implementation uses an auditable state machine for registration, analysis, semantic record validation, memorization, deletion, undo, and raw-data purge. The common successful path is:
 
 ```text
 REGISTERED
@@ -97,6 +104,8 @@ REGISTERED
   -> SOFT_DELETED
   -> MEMORIZED
 ```
+
+Analysis can also fail, be refused, or be requeued after interruption. Soft deletion records the prior live state so it can be restored, while purging releases raw content only after the deletion gate is satisfied. `MEMORIZED` is terminal for the raw-data lifecycle; semantic records and audit information remain available according to their service contracts.
 
 Important characteristics of the design:
 
@@ -116,18 +125,19 @@ The application exposes REST endpoints under:
 /api/v1
 ```
 
-Current API concerns include:
+The Spring Boot application provides a server-rendered Thymeleaf UI and REST endpoints including:
 
-- file import and listing
-- file analysis
-- lifecycle event inspection
-- soft delete and undo
-- memorize and purge flows
-- semantic record inspection
-- search
-- reconstruction
-- evaluation
-- error handling and validation
+- `GET /api/v1/files` and `POST /api/v1/files` for listing and importing text files
+- `POST /api/v1/files/{objectId}/analyze` for semantic analysis
+- `GET /api/v1/files/{objectId}/events` for lifecycle audit events
+- `DELETE /api/v1/files/{objectId}` and `POST /api/v1/files/{objectId}/undo-delete` for reversible deletion
+- `POST /api/v1/files/{objectId}/memorize` and `/purge` for memory commit and raw-data release
+- `GET /api/v1/objects/{objectId}/dna` for semantic records
+- `GET` or `POST /api/v1/search` for semantic search
+- `/api/v1/reconstructions` for reconstruction jobs and generated artifacts
+- `/api/v1/evaluations` and `/api/v1/security/settings` for evaluation and security views
+
+Destructive operations require the configured `X-SFS-Credential` header and, where applicable, confirmation of the Object ID. API errors use structured validation, authorization, conflict, payload, and job-status responses.
 
 The UI is built with Spring Boot and Thymeleaf, and it uses contract-driven application services plus mock implementations where deeper backend infrastructure is intentionally not yet implemented.
 
@@ -151,9 +161,11 @@ The implementation treats protected values differently from ordinary reconstruct
 
 ---
 
-## Current scope
+## Current scope and limits
 
-The codebase currently targets text-based files only. The pipeline and API assume UTF-8 text content and intentionally do not treat browser-provided MIME types as authoritative source-of-truth for file interpretation.
+The V1 codebase targets text-based files only. Imports use UTF-8 text, reject malformed UTF-8, and enforce a 5 MiB limit for multipart uploads. File names are validated as names rather than paths, and browser-provided MIME types are treated as hints instead of authoritative source-of-truth for file interpretation.
+
+The current runtime uses in-memory lifecycle, semantic-record, and job stores. It is a prototype of the domain and application boundaries, not yet a durable production filesystem or persistence layer.
 
 ---
 
@@ -186,7 +198,7 @@ mvn clean package
 From the project root, start the UI application with:
 
 ```bash
-mvn spring-boot:run -pl sfs-ui -am
+mvn spring-boot:run -pl sfs-ui 
 ```
 
 This builds the required dependent modules and starts the Spring Boot application from the UI module.
@@ -194,23 +206,6 @@ This builds the required dependent modules and starts the Spring Boot applicatio
 The default web UI is served by the Spring Boot app, and the REST API is available under the `/api/v1` path.
 
 ---
-
-## Repository layout
-
-```text
-Semantic-File-System/
-├── pom.xml
-├── LICENSE
-├── README.md
-├── .gitignore
-├── sfs-core/
-├── sfs-contracts/
-├── sfs-lifecycle/
-├── sfs-engine/
-├── sfs-app/
-├── sfs-ui/
-└── target/
-```
 
 ---
 
@@ -221,8 +216,8 @@ Semantic-File-System/
 - Spring Boot 4.1.0
 - Thymeleaf
 - Spring MVC / REST
-- JUnit 5
-- AssertJ
+- JUnit Jupiter 5.11.4
+- AssertJ 3.27.3
 
 ---
 
@@ -238,6 +233,7 @@ It is designed to demonstrate:
 - explicit destructive-operation rules
 - secure handling of sensitive values
 - UI/API separation from core logic
+- adapter-based text ingestion and deterministic semantic analysis
 
 ---
 
