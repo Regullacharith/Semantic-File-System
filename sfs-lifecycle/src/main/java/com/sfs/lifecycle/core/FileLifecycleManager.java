@@ -43,19 +43,28 @@ public final class FileLifecycleManager implements FileService {
     private final RawDeletionGate deletionGate = new RawDeletionGate();
     private final LifecycleAuditLog auditLog = new LifecycleAuditLog();
     private AnalysisDispatcher analysisDispatcher;
+    private final ImportAcceptancePolicy importAcceptancePolicy;
 
     public FileLifecycleManager(Clock clock, RawContentStore rawContentStore,
                                 ObjectIdService objectIdService) {
-        this(clock, rawContentStore, objectIdService, null);
+        this(clock, rawContentStore, objectIdService, null, null);
     }
 
     public FileLifecycleManager(Clock clock, RawContentStore rawContentStore,
                                 ObjectIdService objectIdService,
                                 AnalysisDispatcher analysisDispatcher) {
+        this(clock, rawContentStore, objectIdService, analysisDispatcher, null);
+    }
+
+    public FileLifecycleManager(Clock clock, RawContentStore rawContentStore,
+                                ObjectIdService objectIdService,
+                                AnalysisDispatcher analysisDispatcher,
+                                ImportAcceptancePolicy importAcceptancePolicy) {
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
         this.rawContentStore = Objects.requireNonNull(rawContentStore, "rawContentStore must not be null");
         this.objectIdService = Objects.requireNonNull(objectIdService, "objectIdService must not be null");
         this.analysisDispatcher = analysisDispatcher;
+        this.importAcceptancePolicy = importAcceptancePolicy;
     }
 
     public void bindAnalysisDispatcher(AnalysisDispatcher dispatcher) {
@@ -118,6 +127,14 @@ public final class FileLifecycleManager implements FileService {
     public FileOperationResult importFile(FileImportRequest request) {
         if (request == null) {
             return FileOperationResult.failure("No import request was supplied.");
+        }
+        if (importAcceptancePolicy != null) {
+            Optional<String> rejection =
+                    importAcceptancePolicy.rejectionReason(request.fileName(),
+                            request.contentType());
+            if (rejection.isPresent()) {
+                return FileOperationResult.failure(rejection.get());
+            }
         }
         byte[] content = request.content().getBytes(StandardCharsets.UTF_8);
         String sha256 = ContentDigest.sha256Hex(content);
@@ -330,6 +347,14 @@ public final class FileLifecycleManager implements FileService {
             return refuse(file, actor, LifecycleEventType.METADATA_UPDATE_REFUSED,
                     "The display name cannot change while the file is "
                             + presentationLabel(file) + ".");
+        }
+        if (importAcceptancePolicy != null) {
+            Optional<String> rejection = importAcceptancePolicy.rejectionReason(
+                    newFileName, file.metadata().contentType());
+            if (rejection.isPresent()) {
+                return refuse(file, actor, LifecycleEventType.METADATA_UPDATE_REFUSED,
+                        rejection.get());
+            }
         }
         try {
             SemanticFile renamed = file.withMetadata(

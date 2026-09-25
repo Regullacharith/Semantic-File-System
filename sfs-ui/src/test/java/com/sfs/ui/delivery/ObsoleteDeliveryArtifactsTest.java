@@ -26,7 +26,15 @@ class ObsoleteDeliveryArtifactsTest {
             Path.of("sfs-ui", "src", "main", "java", "com", "sfs", "ui", "mock",
                     "DevDataSeeder.java"),
             Path.of("sfs-app", "src", "test", "java", "com", "sfs", "app", "api",
-                    "ApiContractFreezeTest.java"));
+                    "ApiContractFreezeTest.java"),
+            Path.of("sfs-engine", "src", "main", "java", "com", "sfs", "engine", "core",
+                    "ContentSource.java"),
+            Path.of("sfs-engine", "src", "main", "java", "com", "sfs", "engine", "inspect",
+                    "FileInspector.java"),
+            Path.of("sfs-engine", "src", "main", "java", "com", "sfs", "engine", "inspect",
+                    "InspectionReport.java"),
+            Path.of("sfs-engine", "src", "test", "java", "com", "sfs", "engine", "inspect",
+                    "FileInspectorTest.java"));
 
     @Test
     @DisplayName("files removed by later milestones are not present; delete the listed files")

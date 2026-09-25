@@ -43,8 +43,17 @@ public final class SemanticPipeline {
     }
 
     public PipelineResult run(SemanticContext context) {
+        return run(context, java.util.List.of());
+    }
+
+    public PipelineResult run(SemanticContext context,
+                              java.util.List<com.sfs.contracts.semantic.SemanticDnaView.StructureNodeView>
+                                      providedStructure) {
         SemanticIntermediateRepresentation ir = new SemanticIntermediateRepresentation(
                 context.content());
+        if (providedStructure != null && !providedStructure.isEmpty()) {
+            ir.setStructure(providedStructure);
+        }
         Map<String, Long> durations = new LinkedHashMap<>();
         for (Analyzer analyzer : analyzers) {
             long started = System.nanoTime();

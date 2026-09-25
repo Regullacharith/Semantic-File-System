@@ -31,8 +31,10 @@ public class LifecycleConfiguration {
     @Bean
     public FileLifecycleManager fileLifecycleManager(Clock sfsClock,
                                                      RawContentStore rawContentStore,
-                                                     ObjectIdService objectIdService) {
-        return new FileLifecycleManager(sfsClock, rawContentStore, objectIdService);
+                                                     ObjectIdService objectIdService,
+                                                     com.sfs.lifecycle.core.ImportAcceptancePolicy importAcceptancePolicy) {
+        return new FileLifecycleManager(sfsClock, rawContentStore, objectIdService,
+                null, importAcceptancePolicy);
     }
 
 }

@@ -13,9 +13,15 @@ import java.util.Map;
 public class MetaApiController {
 
     private final com.sfs.app.service.FileApplicationService fileApplicationService;
+    private final com.sfs.adapters.registry.AdapterRegistry adapterRegistry;
+    private final com.sfs.adapters.resolve.AdapterResolver adapterResolver;
 
-    public MetaApiController(com.sfs.app.service.FileApplicationService fileApplicationService) {
+    public MetaApiController(com.sfs.app.service.FileApplicationService fileApplicationService,
+                             com.sfs.adapters.registry.AdapterRegistry adapterRegistry,
+                             com.sfs.adapters.resolve.AdapterResolver adapterResolver) {
         this.fileApplicationService = fileApplicationService;
+        this.adapterRegistry = adapterRegistry;
+        this.adapterResolver = adapterResolver;
     }
 
 
@@ -44,11 +50,25 @@ public class MetaApiController {
                 "contractsVersion", CONTRACTS_VERSION,
                 "dnaSchemaVersion", DNA_SCHEMA_VERSION,
                 "rulesVersion", RULES_VERSION,
-                "milestone", " — Semantic Engine",
-                "enforcedSubsystems", java.util.List.of("file-lifecycle", "semantic-engine"),
-                "note", "The file lifecycle manager and the semantic engine "
-                        + "subsystems. Search, reconstruction and evaluation are mocked. "
-                        + "Security boundaries are enforced with development identities "
-                        + "until the security .");
+                "milestone", "M05 — File-Type Adapter Framework / Text Adapter",
+                "enforcedSubsystems",
+                java.util.List.of("file-lifecycle", "semantic-engine", "adapter-framework"),
+                "adapters", adapterRegistry.descriptors().stream()
+                        .map(descriptor -> Map.of(
+                                "id", descriptor.id(),
+                                "displayName", descriptor.displayName(),
+                                "version", descriptor.version(),
+                                "extensions", java.util.List.copyOf(
+                                        descriptor.supportedExtensions()),
+                                "contentTypes", java.util.List.copyOf(
+                                        descriptor.supportedContentTypes()),
+                                "capabilities", java.util.List.copyOf(descriptor.capabilities())))
+                        .toList(),
+                "adapterResolutions", adapterResolver.resolutions(),
+                "adapterRefusals", adapterResolver.refusals(),
+                "note", "The file lifecycle manager, the semantic engine and the adapter "
+                        + "framework are real subsystems. Search, reconstruction and "
+                        + "evaluation are mocked. Security boundaries are enforced with "
+                        + "development identities until the security milestone.");
     }
 }

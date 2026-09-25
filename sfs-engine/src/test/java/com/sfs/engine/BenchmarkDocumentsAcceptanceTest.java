@@ -1,7 +1,12 @@
 package com.sfs.engine;
 
+import com.sfs.adapters.registry.AdapterRegistry;
+import com.sfs.adapters.resolve.AdapterResolver;
+import com.sfs.adapters.text.TextAdapter;
 import com.sfs.engine.cache.AnalysisCache;
 import com.sfs.engine.core.AnalysisCompletionListener;
+import com.sfs.engine.core.AnalysisInput;
+import com.sfs.engine.core.AnalysisInputProvider;
 import com.sfs.engine.core.AnalysisJob;
 import com.sfs.engine.core.SemanticEngine;
 import com.sfs.engine.level.AnalysisLevelPolicy;
@@ -31,19 +36,22 @@ class BenchmarkDocumentsAcceptanceTest {
     @BeforeAll
     void setUp() {
         store = new InMemorySemanticRecordStore();
-        Map<String, byte[]> contents = new ConcurrentHashMap<>();
+        Map<String, AnalysisInput> inputs = new ConcurrentHashMap<>();
         for (String name : List.of("quarterly-report.txt", "team-meeting-minutes.txt",
                 "research-notes.txt")) {
             try {
-                contents.put(name.replace(".txt", "").replace("-", ""),
+                String objectId = name.replace(".txt", "").replace("-", "");
+                inputs.put(objectId, new AnalysisInput(objectId, name, "text/plain",
                         Files.readAllBytes(Path.of("src", "test", "resources",
-                                "benchmarks", name)));
+                                "benchmarks", name))));
             } catch (Exception e) {
                 throw new IllegalStateException("missing benchmark fixture " + name, e);
             }
         }
-        engine = new SemanticEngine(
-                objectId -> Optional.ofNullable(contents.get(objectId)),
+        AnalysisInputProvider provider = objectId -> Optional.ofNullable(inputs.get(objectId));
+        AdapterRegistry registry = new AdapterRegistry();
+        registry.register(new TextAdapter());
+        engine = new SemanticEngine(provider, new AdapterResolver(registry),
                 store, new AnalysisCache(), AnalysisLevelPolicy.v1(),
                 new AnalysisCompletionListener() { }, Clock.systemUTC());
     }
@@ -92,12 +100,20 @@ class BenchmarkDocumentsAcceptanceTest {
     private InMemorySemanticRecordStore runIsolated(byte[] content) {
         InMemorySemanticRecordStore isolated = new InMemorySemanticRecordStore();
         SemanticEngine isolatedEngine = new SemanticEngine(
-                ignored -> Optional.of(content), isolated, new AnalysisCache(),
+                ignored -> Optional.of(new AnalysisInput("bench", "bench.txt",
+                        "text/plain", content)),
+                resolver(), isolated, new AnalysisCache(),
                 AnalysisLevelPolicy.v1(), new AnalysisCompletionListener() { },
                 Clock.systemUTC());
         assertThat(isolatedEngine.analyzeNow("bench").status())
                 .isEqualTo(AnalysisJob.Status.COMPLETED);
         return isolated;
+    }
+
+    private AdapterResolver resolver() {
+        AdapterRegistry registry = new AdapterRegistry();
+        registry.register(new TextAdapter());
+        return new AdapterResolver(registry);
     }
 
     private static final class List {
