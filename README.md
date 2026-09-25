@@ -52,9 +52,7 @@ Semantic-File-System/
 ├── sfs-app/
 │   └── Application services and API request/response models
 ├── sfs-ui/
-│   └── Spring Boot UI + REST API layer using Thymeleaf and controller-based endpoints
-└── target/
-    └── Generated build artifacts from local Maven runs
+  └── Spring Boot UI + REST API layer using Thymeleaf and controller-based endpoints
 ```
 
 ---
@@ -198,7 +196,7 @@ mvn clean package
 From the project root, start the UI application with:
 
 ```bash
-mvn spring-boot:run -pl sfs-ui 
+mvn spring-boot:run -pl sfs-ui
 ```
 
 This builds the required dependent modules and starts the Spring Boot application from the UI module.
@@ -206,7 +204,6 @@ This builds the required dependent modules and starts the Spring Boot applicatio
 The default web UI is served by the Spring Boot app, and the REST API is available under the `/api/v1` path.
 
 ---
-
 ---
 
 ## Technology stack
