@@ -1,6 +1,7 @@
 package com.sfs.engine.pipeline;
 
 import com.sfs.contracts.semantic.SemanticDnaView;
+import com.sfs.core.dna.SemanticDna;
 import com.sfs.contracts.semantic.ProtectedReferenceView;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public final class SemanticIntermediateRepresentation {
     private List<ProtectedReferenceView> protectedReferences = new ArrayList<>();
     private double[] embedding = new double[0];
     private String summary = "";
-    private SemanticDnaView dnaDraft;
+    private SemanticDna dnaDraft;
 
     public SemanticIntermediateRepresentation(String rawText) {
         this.rawText = Objects.requireNonNull(rawText, "rawText must not be null");
@@ -100,7 +101,7 @@ public final class SemanticIntermediateRepresentation {
         return summary;
     }
 
-    public SemanticDnaView dnaDraft() {
+    public SemanticDna dnaDraft() {
         return dnaDraft;
     }
 
@@ -160,7 +161,7 @@ public final class SemanticIntermediateRepresentation {
         this.summary = Objects.requireNonNull(summary, "summary must not be null");
     }
 
-    void setDnaDraft(SemanticDnaView dnaDraft) {
+    void setDnaDraft(SemanticDna dnaDraft) {
         this.dnaDraft = Objects.requireNonNull(dnaDraft, "dnaDraft must not be null");
     }
 }

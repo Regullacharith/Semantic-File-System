@@ -72,7 +72,7 @@ class BenchmarkDocumentsAcceptanceTest {
             assertThat(job.stageDurationsMs()).isNotEmpty();
 
             var dna = store.findSemanticDna(objectId).orElseThrow();
-            assertThat(dna.schemaVersion()).isEqualTo("sfs-dna/0.1");
+            assertThat(dna.schemaVersion()).isEqualTo("sfs-dna/0.2");
             assertThat(dna.summary()).isNotBlank();
             assertThat(dna.concepts()).isNotEmpty();
             assertThat(dna.topics()).isNotEmpty();

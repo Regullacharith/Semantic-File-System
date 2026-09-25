@@ -1,6 +1,6 @@
 package com.sfs.engine.pipeline;
 
-import com.sfs.contracts.semantic.SemanticDnaView;
+import com.sfs.core.dna.SemanticDna;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.Objects;
 
 public record PipelineResult(
         boolean success,
-        SemanticDnaView dna,
+        SemanticDna dna,
         Map<String, Long> stageDurationsMs,
         String failedStage,
         String failureReason,
@@ -23,7 +23,7 @@ public record PipelineResult(
                 : List.copyOf(validationIssues);
     }
 
-    public static PipelineResult success(SemanticDnaView dna, Map<String, Long> stageDurationsMs) {
+    public static PipelineResult success(SemanticDna dna, Map<String, Long> stageDurationsMs) {
         Objects.requireNonNull(dna, "dna must not be null");
         return new PipelineResult(true, dna, stageDurationsMs, null, null, List.of());
     }

@@ -107,7 +107,7 @@ class SemanticEngineTest {
         assertThat(job.status()).isEqualTo(AnalysisJob.Status.COMPLETED);
         assertThat(store.findSemanticDna("sfs-obj-0001-a1b2c3d4")).isPresent();
         assertThat(listener.successes).hasSize(1);
-        assertThat(listener.successes.getFirst()).startsWith("sfs-obj-0001-a1b2c3d4->sfs-dna/0.1 v");
+        assertThat(listener.successes.getFirst()).startsWith("sfs-obj-0001-a1b2c3d4->sfs-dna/0.2 v");
         var dna = store.findSemanticDna("sfs-obj-0001-a1b2c3d4").orElseThrow();
         assertThat(dna.summary()).isNotBlank();
         assertThat(dna.concepts()).isNotEmpty();
@@ -243,6 +243,24 @@ class SemanticEngineTest {
         AnalysisJob.Status secondStatus = second.status();
         awaitTerminal(first.jobId());
         assertThat(secondStatus).isEqualTo(AnalysisJob.Status.REJECTED);
+    }
+
+    @Test
+    @DisplayName("re-analysis is detectable through version and canonical integrity")
+    void dnaVersioningIsDetectable() {
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt", BENCHMARK));
+        engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
+        var storedV1 = store.findStored("sfs-obj-0001-a1b2c3d4").orElseThrow();
+
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt",
+                BENCHMARK + "Follow-up paragraph with new facts for 2027.\n"));
+        engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
+        var storedV2 = store.findStored("sfs-obj-0001-a1b2c3d4").orElseThrow();
+
+        assertThat(storedV2.dna().dnaVersion()).isEqualTo(2);
+        assertThat(storedV2.canonicalSha256()).isNotEqualTo(storedV1.canonicalSha256());
+        assertThat(storedV2.chainsTo(storedV1)).isTrue();
+        assertThat(store.history("sfs-obj-0001-a1b2c3d4")).hasSize(2);
     }
 
     @Test
