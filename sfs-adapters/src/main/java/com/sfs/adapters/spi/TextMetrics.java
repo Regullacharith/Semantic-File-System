@@ -1,15 +1,15 @@
-package com.sfs.engine.inspect;
+package com.sfs.adapters.spi;
 
 import java.util.Objects;
 
-public record InspectionReport(
+public record TextMetrics(
         int byteLength,
         int lineCount,
         int wordCount,
         int paragraphCount,
         double printableRatio) {
 
-    public InspectionReport {
+    public TextMetrics {
         Objects.requireNonNull(byteLength, "byteLength must not be null");
         if (byteLength < 0) {
             throw new IllegalArgumentException("byteLength must not be negative");

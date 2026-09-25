@@ -31,7 +31,35 @@ public final class SummaryAnalyzer implements Analyzer {
                 break;
             }
         }
+        if (sentencesUsed == 0) {
+            summary = new StringBuilder(summaryFromHeadings(ir));
+        }
         ir.setSummary(cap(summary.toString().strip()));
+    }
+
+    private static String summaryFromHeadings(SemanticIntermediateRepresentation ir) {
+        StringBuilder headings = new StringBuilder();
+        int headingsUsed = 0;
+        for (String line : ir.rawLines()) {
+            String stripped = line.strip();
+            if (stripped.isEmpty() || !TextParsingAnalyzer.isHeadingLike(stripped)) {
+                continue;
+            }
+            String heading = TextParsingAnalyzer.stripHeadingMarkers(stripped).strip();
+            if (heading.isEmpty()) {
+                continue;
+            }
+            if (!headings.isEmpty()) {
+                headings.append("; ");
+            }
+            headings.append(heading);
+            headingsUsed++;
+            if (headingsUsed >= MAX_SUMMARY_SENTENCES + 1
+                    || headings.length() >= MAX_SUMMARY_LENGTH) {
+                break;
+            }
+        }
+        return headings.toString();
     }
 
     private static String cap(String summary) {

@@ -1,5 +1,9 @@
 package com.sfs.engine.core;
 
+import com.sfs.adapters.registry.AdapterRegistry;
+import com.sfs.adapters.resolve.AdapterResolver;
+import com.sfs.adapters.spi.FileTypeAdapter;
+import com.sfs.adapters.text.TextAdapter;
 import com.sfs.engine.cache.AnalysisCache;
 import com.sfs.engine.level.AnalysisLevel;
 import com.sfs.engine.level.AnalysisLevelPolicy;
@@ -27,12 +31,13 @@ class SemanticEngineTest {
     private static final String BENCHMARK = """
             # Summary
 
-           This report reviews the database platform for Q3 2026. Query latency
-            decreased by 40 percent after indexing changes were deployed .
+            This report reviews the database platform for Q3 2026. Query latency
+            decreased by 40 percent after indexing changes were deployed in August.
 
             # Measurements
 
             PostgreSQL hosts the production workload for the analytics platform.
+            The reporting period covers Q3 2026.
             """ + "\n";
 
     @TempDir
@@ -42,7 +47,7 @@ class SemanticEngineTest {
     private AnalysisCache cache;
     private RecordingListener listener;
     private SemanticEngine engine;
-    private java.util.Map<String, byte[]> contents;
+    private java.util.Map<String, AnalysisInput> inputs;
 
     private static final class RecordingListener implements AnalysisCompletionListener {
 
@@ -70,20 +75,32 @@ class SemanticEngineTest {
 
     @BeforeEach
     void setUp() {
-        contents = new java.util.concurrent.ConcurrentHashMap<>();
+        inputs = new java.util.concurrent.ConcurrentHashMap<>();
         store = new InMemorySemanticRecordStore();
         cache = new AnalysisCache();
         listener = new RecordingListener();
         engine = new SemanticEngine(
-                objectId -> Optional.ofNullable(contents.get(objectId)),
+                objectId -> Optional.ofNullable(inputs.get(objectId)),
+                resolverWithTextAdapter(),
                 store, cache, AnalysisLevelPolicy.v1(), listener,
                 Clock.fixed(Instant.parse("2026-03-15T10:00:00Z"), ZoneOffset.UTC));
+    }
+
+    static AdapterResolver resolverWithTextAdapter() {
+        AdapterRegistry registry = new AdapterRegistry();
+        registry.register(new TextAdapter());
+        return new AdapterResolver(registry);
+    }
+
+    private static AnalysisInput textInput(String objectId, String fileName, String content) {
+        return new AnalysisInput(objectId, fileName, "text/plain",
+                content.getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
     @DisplayName("a synchronous analysis produces complete, persisted, certified DNA")
     void synchronousAnalysis() {
-        contents.put("sfs-obj-0001-a1b2c3d4", BENCHMARK.getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt", BENCHMARK));
 
         AnalysisJob job = engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
 
@@ -104,7 +121,7 @@ class SemanticEngineTest {
     @Test
     @DisplayName("unchanged content reuses the prior analysis without recomputation")
     void reuseOfUnchangedContent() {
-        contents.put("sfs-obj-0001-a1b2c3d4", BENCHMARK.getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt", BENCHMARK));
         engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
         String versionBefore = store.findSemanticDna("sfs-obj-0001-a1b2c3d4").orElseThrow()
                 .schemaVersion() + " v" + store.findSemanticDna("sfs-obj-0001-a1b2c3d4").orElseThrow().dnaVersion();
@@ -123,11 +140,10 @@ class SemanticEngineTest {
     @Test
     @DisplayName("changed content triggers a fresh analysis with a bumped DNA version")
     void changedContentReanalyzes() {
-        contents.put("sfs-obj-0001-a1b2c3d4", BENCHMARK.getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt", BENCHMARK));
         engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
-        contents.put("sfs-obj-0001-a1b2c3d4",
-                (BENCHMARK + "Follow-up paragraph with new facts for 2027.\n")
-                        .getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt",
+                BENCHMARK + "Follow-up paragraph with new facts for 2027.\n"));
 
         AnalysisJob second = engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
 
@@ -151,7 +167,8 @@ class SemanticEngineTest {
     @Test
     @DisplayName("non-text content fails inspection with an explicit reason")
     void binaryContentFailsInspection() {
-        contents.put("sfs-obj-0001-a1b2c3d4", new byte[]{'a', 0, 'b'});
+        inputs.put("sfs-obj-0001-a1b2c3d4", new AnalysisInput("sfs-obj-0001-a1b2c3d4",
+                "notes.txt", "text/plain", new byte[]{'a', 0, 'b'}));
 
         AnalysisJob job = engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
 
@@ -163,7 +180,8 @@ class SemanticEngineTest {
     @Test
     @DisplayName("wordless content fails validation instead of producing empty DNA")
     void wordlessContentFails() {
-        contents.put("sfs-obj-0001-a1b2c3d4", "...\n...\n".getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt",
+                "...\n...\n"));
 
         AnalysisJob job = engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
 
@@ -172,9 +190,25 @@ class SemanticEngineTest {
     }
 
     @Test
+    @DisplayName("a headings-only document is summarized from its headings and completes")
+    void headingsOnlyDocumentCompletes() {
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt",
+                "# Agenda\n\n# Decisions\n\n# Action Items\n"));
+
+        AnalysisJob job = engine.analyzeNow("sfs-obj-0001-a1b2c3d4");
+
+        assertThat(job.status()).isEqualTo(AnalysisJob.Status.COMPLETED);
+        assertThat(job.failureReason()).isNull();
+        var dna = store.findSemanticDna("sfs-obj-0001-a1b2c3d4").orElseThrow();
+        assertThat(dna.summary()).isEqualTo("Agenda; Decisions; Action Items");
+        assertThat(dna.structure()).hasSize(3);
+        assertThat(dna.embeddingDimensions()).isEqualTo(64);
+    }
+
+    @Test
     @DisplayName("a disabled analysis level is rejected with the policy reason")
     void disabledLevelRejected() {
-        contents.put("sfs-obj-0001-a1b2c3d4", BENCHMARK.getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt", BENCHMARK));
 
         AnalysisJob job = engine.analyzeNow("sfs-obj-0001-a1b2c3d4", AnalysisLevel.DEEP);
 
@@ -187,7 +221,7 @@ class SemanticEngineTest {
     @Test
     @DisplayName("asynchronous submission completes on the worker and records stage durations")
     void asynchronousSubmission() throws Exception {
-        contents.put("sfs-obj-0001-a1b2c3d4", BENCHMARK.getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt", BENCHMARK));
 
         AnalysisJob queued = engine.submit("sfs-obj-0001-a1b2c3d4");
         assertThat(queued.status()).isEqualTo(AnalysisJob.Status.QUEUED);
@@ -202,7 +236,7 @@ class SemanticEngineTest {
     @Test
     @DisplayName("a second job for the same object while one is active is rejected")
     void duplicateActiveJobRejected() throws Exception {
-        contents.put("sfs-obj-0001-a1b2c3d4", BENCHMARK.getBytes(StandardCharsets.UTF_8));
+        inputs.put("sfs-obj-0001-a1b2c3d4", textInput("sfs-obj-0001-a1b2c3d4", "notes.txt", BENCHMARK));
         AnalysisJob first = engine.submit("sfs-obj-0001-a1b2c3d4");
         AnalysisJob second = engine.submit("sfs-obj-0001-a1b2c3d4");
 
@@ -215,7 +249,7 @@ class SemanticEngineTest {
     @DisplayName("the pipeline exposes its ordered stage names for diagnostics")
     void stageNamesAreExposed() {
         assertThat(engine.jobRegistry()).isNotNull();
-        List<String> names = java.util.List.of("text-parsing", "summary", "structure",
+            List<String> names = java.util.List.of("text-parsing", "summary", "structure",
                 "concepts", "topics", "entities", "facts", "relationships", "embeddings",
                 "protected-values", "dna-builder");
         assertThat(com.sfs.engine.pipeline.SemanticPipeline.v1().stageNames())

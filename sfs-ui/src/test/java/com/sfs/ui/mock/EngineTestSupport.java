@@ -1,7 +1,12 @@
 package com.sfs.ui.mock;
 
+import com.sfs.adapters.registry.AdapterRegistry;
+import com.sfs.adapters.resolve.AdapterResolver;
+import com.sfs.adapters.text.TextAdapter;
 import com.sfs.engine.cache.AnalysisCache;
 import com.sfs.engine.core.AnalysisCompletionListener;
+import com.sfs.engine.core.AnalysisInput;
+import com.sfs.engine.core.AnalysisInputProvider;
 import com.sfs.engine.core.AnalysisJob;
 import com.sfs.engine.core.SemanticEngine;
 import com.sfs.engine.level.AnalysisLevelPolicy;
@@ -30,8 +35,17 @@ public final class EngineTestSupport {
         FileLifecycleManager lifecycle = new FileLifecycleManager(
                 Clock.systemUTC(), raw, DevDataSeeder.scriptedObjectIdService(), null);
         InMemorySemanticRecordStore records = new InMemorySemanticRecordStore();
+        AnalysisInputProvider inputProvider = objectId -> lifecycle.registeredFile(objectId)
+                .flatMap(file -> raw.retrieve(objectId)
+                        .map(bytes -> new AnalysisInput(objectId,
+                                file.metadata().fileName(),
+                                file.metadata().contentType(),
+                                bytes)));
+        AdapterRegistry registry = new AdapterRegistry();
+        registry.register(new TextAdapter());
         SemanticEngine engine = new SemanticEngine(
-                raw::retrieve,
+                inputProvider,
+                new AdapterResolver(registry),
                 records,
                 new AnalysisCache(),
                 AnalysisLevelPolicy.v1(),

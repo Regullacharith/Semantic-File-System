@@ -11,16 +11,14 @@
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>sfs-engine</artifactId>
+    <artifactId>sfs-adapters</artifactId>
     <packaging>jar</packaging>
 
-    <name>SFS Engine</name>
+    <name>SFS Adapters</name>
     <description>
-        Semantic Engine subsystem : orchestrator, adapter-routed
-        input, deterministic semantic pipeline, change detection cache,
-        background worker and analysis levels. Produces Semantic DNA records
-        for text documents and persists them as semantic records. 
-        the input routing and text handling live in sfs-adapters.
+        File-Type Adapter Framework subsystem : adapter SPI,
+        adapter registry, automatic adapter resolver and the V1 Text Adapter
+        with safe text loading, normalization and structural parsing.
     </description>
 
     <dependencies>
@@ -31,10 +29,6 @@
         <dependency>
             <groupId>com.sfs</groupId>
             <artifactId>sfs-contracts</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.sfs</groupId>
-            <artifactId>sfs-adapters</artifactId>
         </dependency>
     </dependencies>
 

@@ -1,13 +1,19 @@
 package com.sfs.ui.config;
 
+import com.sfs.adapters.registry.AdapterRegistry;
+import com.sfs.adapters.resolve.AdapterResolver;
+import com.sfs.adapters.resolve.UnsupportedFileTypeException;
+import com.sfs.adapters.text.TextAdapter;
 import com.sfs.app.service.JobRegistry;
 import com.sfs.app.service.ReconstructionApplicationService;
 import com.sfs.engine.cache.AnalysisCache;
 import com.sfs.engine.core.AnalysisCompletionListener;
+import com.sfs.engine.core.AnalysisInput;
+import com.sfs.engine.core.AnalysisInputProvider;
 import com.sfs.engine.core.AnalysisJob;
 import com.sfs.engine.core.AnalysisJobListener;
-import com.sfs.engine.core.ContentSource;
 import com.sfs.engine.core.SemanticEngine;
+import com.sfs.lifecycle.core.ImportAcceptancePolicy;
 import com.sfs.engine.level.AnalysisLevelPolicy;
 import com.sfs.engine.record.InMemorySemanticRecordStore;
 import com.sfs.lifecycle.core.AnalysisDispatcher;
@@ -37,8 +43,35 @@ public class EngineWiringConfiguration {
     }
 
     @Bean
-    public ContentSource engineContentSource(RawContentStore rawContentStore) {
-        return rawContentStore::retrieve;
+    public AdapterRegistry adapterRegistry() {
+        AdapterRegistry registry = new AdapterRegistry();
+        registry.register(new TextAdapter());
+        return registry;
+    }
+
+    @Bean
+    public AdapterResolver adapterResolver(AdapterRegistry adapterRegistry) {
+        return new AdapterResolver(adapterRegistry);
+    }
+
+    @Bean
+    public AnalysisInputProvider analysisInputProvider(RawContentStore rawContentStore,
+                                                       FileLifecycleManager fileLifecycleManager) {
+        return objectId -> fileLifecycleManager.registeredFile(objectId)
+                .flatMap(file -> rawContentStore.retrieve(objectId)
+                        .map(bytes -> new AnalysisInput(
+                                objectId,
+                                file.metadata().fileName(),
+                                file.metadata().contentType(),
+                                bytes)));
+    }
+
+    @Bean
+    public ImportAcceptancePolicy importAcceptancePolicy(AdapterResolver adapterResolver) {
+        return (fileName, contentType) -> adapterResolver.find(fileName, contentType).isPresent()
+                ? java.util.Optional.empty()
+                : java.util.Optional.of(
+                        new UnsupportedFileTypeException(fileName, contentType).getMessage());
     }
 
     @Bean
@@ -63,13 +96,15 @@ public class EngineWiringConfiguration {
     }
 
     @Bean(destroyMethod = "close")
-    public SemanticEngine semanticEngine(ContentSource engineContentSource,
+    public SemanticEngine semanticEngine(AnalysisInputProvider analysisInputProvider,
+                                         AdapterResolver adapterResolver,
                                          InMemorySemanticRecordStore semanticRecordStore,
                                          AnalysisCache analysisCache,
                                          AnalysisLevelPolicy analysisLevelPolicy,
                                          AnalysisCompletionListener lifecycleCompletionListener,
                                          Clock sfsClock) {
-        return new SemanticEngine(engineContentSource, semanticRecordStore, analysisCache,
+        return new SemanticEngine(analysisInputProvider, adapterResolver,
+                semanticRecordStore, analysisCache,
                 analysisLevelPolicy, lifecycleCompletionListener, sfsClock);
     }
 
