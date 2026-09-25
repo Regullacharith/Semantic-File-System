@@ -41,9 +41,12 @@ class MilestoneFourAcceptanceTest {
             # Measurements
 
             PostgreSQL hosts the production workload for the analytics platform.
+            The reporting period covers Q3 2026.
+            Nightly batch jobs feed the reporting tables.
 
             # Recommendations
 
+            The team must verify capacity before the Q4 2026 migration.
             PostgreSQL provides the primary storage for the platform.
             """;
 
@@ -161,7 +164,7 @@ class MilestoneFourAcceptanceTest {
         String body = dna.body();
         assertThat(body)
                 .contains("\"present\":true")
-                .contains("\"schemaVersion\":\"sfs-dna/0.1\"")
+                .contains("\"schemaVersion\":\"sfs-dna/0.2\"")
                 .contains("\"embeddingDimensions\":64")
                 .contains("\"summary\":\"The quarterly review covers")
                 .contains("Q3 2026");

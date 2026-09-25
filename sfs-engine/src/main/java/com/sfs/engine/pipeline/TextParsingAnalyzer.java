@@ -9,6 +9,8 @@ import java.util.Map;
 
 public final class TextParsingAnalyzer implements Analyzer {
 
+    private final ProtectedValueDetector protectedValueDetector = new ProtectedValueDetector();
+
     @Override
     public String name() {
         return "text-parsing";
@@ -16,9 +18,13 @@ public final class TextParsingAnalyzer implements Analyzer {
 
     @Override
     public void perform(SemanticContext context, SemanticIntermediateRepresentation ir) {
-        ir.setParagraphs(splitParagraphs(ir.rawText()));
+        List<String> extractableLines = ir.rawLines().stream()
+                .filter(line -> !protectedValueDetector.isSensitiveLine(line))
+                .toList();
+        String extractableText = String.join("\n", extractableLines);
+        ir.setParagraphs(splitParagraphs(extractableText));
         ir.setSentences(splitSentences(ir.paragraphs()));
-        List<String> tokens = tokenize(ir.rawText());
+        List<String> tokens = tokenize(extractableText);
         ir.setTokens(tokens);
         ir.setWordFrequency(countFrequencies(tokens));
         ir.setBigramFrequency(countBigrams(tokens));

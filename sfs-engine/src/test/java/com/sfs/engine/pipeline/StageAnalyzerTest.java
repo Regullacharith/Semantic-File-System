@@ -199,7 +199,7 @@ class StageAnalyzerTest {
         var dna = ir.dnaDraft();
         assertThat(dna).isNotNull();
         assertThat(dna.objectId()).isEqualTo("sfs-obj-0001-a1b2c3d4");
-        assertThat(dna.schemaVersion()).isEqualTo("sfs-dna/0.1");
+        assertThat(dna.schemaVersion()).isEqualTo("sfs-dna/0.2");
         assertThat(dna.dnaVersion()).isEqualTo(1);
         assertThat(dna.summary()).isNotBlank();
         assertThat(dna.concepts()).isNotEmpty();
@@ -208,7 +208,7 @@ class StageAnalyzerTest {
         assertThat(dna.facts()).isNotEmpty();
         assertThat(dna.relationships()).isNotEmpty();
         assertThat(dna.structure()).isNotEmpty();
-        assertThat(dna.embeddingDimensions()).isEqualTo(EmbeddingAnalyzer.DIMENSIONS);
+        assertThat(dna.embedding().dimensions()).isEqualTo(EmbeddingAnalyzer.DIMENSIONS);
         assertThat(dna.fidelity().analyzerVersion()).isEqualTo("sfs-engine/0.1");
     }
 }

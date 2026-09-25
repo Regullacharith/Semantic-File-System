@@ -27,7 +27,7 @@ public class MetaApiController {
 
     private static final String API_VERSION = "v1";
     private static final String CONTRACTS_VERSION = "0.1";
-    private static final String DNA_SCHEMA_VERSION = "sfs-dna/0.1";
+    private static final String DNA_SCHEMA_VERSION = "sfs-dna/0.2";
     private static final String RULES_VERSION = "sfs-rules/0.1";
 
     @GetMapping("/health")
@@ -50,9 +50,10 @@ public class MetaApiController {
                 "contractsVersion", CONTRACTS_VERSION,
                 "dnaSchemaVersion", DNA_SCHEMA_VERSION,
                 "rulesVersion", RULES_VERSION,
-                "milestone", "M05 — File-Type Adapter Framework / Text Adapter",
+                "milestone", "M06 — Semantic Representation System / Semantic DNA",
                 "enforcedSubsystems",
-                java.util.List.of("file-lifecycle", "semantic-engine", "adapter-framework"),
+                java.util.List.of("file-lifecycle", "semantic-engine", "adapter-framework",
+                        "semantic-representation"),
                 "adapters", adapterRegistry.descriptors().stream()
                         .map(descriptor -> Map.of(
                                 "id", descriptor.id(),
@@ -66,9 +67,10 @@ public class MetaApiController {
                         .toList(),
                 "adapterResolutions", adapterResolver.resolutions(),
                 "adapterRefusals", adapterResolver.refusals(),
-                "note", "The file lifecycle manager, the semantic engine and the adapter "
-                        + "framework are real subsystems. Search, reconstruction and "
-                        + "evaluation are mocked. Security boundaries are enforced with "
-                        + "development identities until the security milestone.");
+                "note", "The file lifecycle manager, the semantic engine, the adapter "
+                        + "framework and the semantic representation system are real "
+                        + "subsystems. Search, reconstruction and evaluation are mocked. "
+                        + "Security boundaries are enforced with development identities "
+                        + "until the security milestone.");
     }
 }

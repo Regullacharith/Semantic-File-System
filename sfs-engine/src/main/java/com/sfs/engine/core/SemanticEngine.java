@@ -182,7 +182,7 @@ public final class SemanticEngine implements AutoCloseable {
                 job.submittedAt(), null, clock.instant(), reason, false, null));
     }
 
-    private static String versionString(com.sfs.contracts.semantic.SemanticDnaView dna) {
+    private static String versionString(com.sfs.core.dna.SemanticDna dna) {
         return dna.schemaVersion() + " v" + dna.dnaVersion();
     }
 
