@@ -18,6 +18,7 @@
         <module>sfs-contracts</module>
         <module>sfs-lifecycle</module>
         <module>sfs-engine</module>
+        <module>sfs-adapters</module>
         <module>sfs-app</module>
         <module>sfs-ui</module>
     </modules>
@@ -39,7 +40,6 @@
 
     <dependencyManagement>
         <dependencies>
-
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -84,6 +84,11 @@
             </dependency>
             <dependency>
                 <groupId>com.sfs</groupId>
+                <artifactId>sfs-adapters</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sfs</groupId>
                 <artifactId>sfs-app</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -121,7 +126,7 @@
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
-                   
+                  
                     <parameters>true</parameters>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
