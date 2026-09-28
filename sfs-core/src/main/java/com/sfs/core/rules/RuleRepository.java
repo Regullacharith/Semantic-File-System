@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class RuleRepository {
 
     private final Map<String, StoredRuleSet> setsByObjectId = new ConcurrentHashMap<>();
+    private volatile java.util.function.Consumer<RuleSet> derivationSink;
     private final AtomicLong hits = new AtomicLong();
     private final AtomicLong derivations = new AtomicLong();
     private final AtomicLong versionConflicts = new AtomicLong();
@@ -40,6 +41,9 @@ public final class RuleRepository {
 
         RuleSet derived = deriver.derive(dna);
         derivations.incrementAndGet();
+        if (derivationSink != null) {
+            derivationSink.accept(derived);
+        }
         String canonicalJson = RuleSetCanonical.serialize(derived);
         setsByObjectId.put(dna.objectId(), new StoredRuleSet(
                 derived, canonicalJson, RuleSetCanonical.integrityHash(derived), at));
@@ -54,6 +58,10 @@ public final class RuleRepository {
                 set, canonicalJson, RuleSetCanonical.integrityHash(set), at);
         setsByObjectId.put(set.objectId(), stored);
         return stored;
+    }
+
+    public void setDerivationSink(java.util.function.Consumer<RuleSet> sink) {
+        this.derivationSink = Objects.requireNonNull(sink, "sink must not be null");
     }
 
     public Optional<StoredRuleSet> find(String objectId) {
