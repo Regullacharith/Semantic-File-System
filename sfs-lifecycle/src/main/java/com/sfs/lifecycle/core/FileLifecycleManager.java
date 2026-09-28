@@ -44,6 +44,7 @@ public final class FileLifecycleManager implements FileService {
     private final LifecycleAuditLog auditLog = new LifecycleAuditLog();
     private AnalysisDispatcher analysisDispatcher;
     private final ImportAcceptancePolicy importAcceptancePolicy;
+    private final LifecyclePersistence lifecyclePersistence;
 
     public FileLifecycleManager(Clock clock, RawContentStore rawContentStore,
                                 ObjectIdService objectIdService) {
@@ -60,11 +61,21 @@ public final class FileLifecycleManager implements FileService {
                                 ObjectIdService objectIdService,
                                 AnalysisDispatcher analysisDispatcher,
                                 ImportAcceptancePolicy importAcceptancePolicy) {
+        this(clock, rawContentStore, objectIdService, analysisDispatcher,
+                importAcceptancePolicy, null);
+    }
+
+    public FileLifecycleManager(Clock clock, RawContentStore rawContentStore,
+                                ObjectIdService objectIdService,
+                                AnalysisDispatcher analysisDispatcher,
+                                ImportAcceptancePolicy importAcceptancePolicy,
+                                LifecyclePersistence lifecyclePersistence) {
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
         this.rawContentStore = Objects.requireNonNull(rawContentStore, "rawContentStore must not be null");
         this.objectIdService = Objects.requireNonNull(objectIdService, "objectIdService must not be null");
         this.analysisDispatcher = analysisDispatcher;
         this.importAcceptancePolicy = importAcceptancePolicy;
+        this.lifecyclePersistence = lifecyclePersistence;
     }
 
     public void bindAnalysisDispatcher(AnalysisDispatcher dispatcher) {
@@ -73,6 +84,26 @@ public final class FileLifecycleManager implements FileService {
 
     public LifecycleAuditLog auditLog() {
         return auditLog;
+    }
+
+    private void storeFile(String key, SemanticFile file) {
+        filesByObjectId.put(key, file);
+        if (lifecyclePersistence != null) {
+            lifecyclePersistence.persistFile(file);
+        }
+    }
+
+    public int objectCount() {
+        return filesByObjectId.size();
+    }
+
+    public void restore(List<SemanticFile> files, List<LifecycleEvent> events) {
+        for (LifecycleEvent event : events) {
+            auditLog.restore(event);
+        }
+        for (SemanticFile file : files) {
+            filesByObjectId.put(file.objectId().value(), file);
+        }
     }
 
     public List<String> requeueInterruptedAnalyses() {
@@ -97,7 +128,7 @@ public final class FileLifecycleManager implements FileService {
             if (entry.getValue().state() == FileState.MEMORIZABLE) {
                 SemanticFile restored = entry.getValue()
                         .withState(FileState.ANALYZED, clock.instant());
-                filesByObjectId.put(entry.getKey(), restored);
+                storeFile(entry.getKey(), restored);
                 audit(entry.getKey(), LifecycleEventType.MEMORIZE_INTERRUPTED,
                         FileState.MEMORIZABLE, FileState.ANALYZED, SYSTEM_PRINCIPAL,
                         false, "interrupted memorization rolled back at startup", null);
@@ -113,7 +144,7 @@ public final class FileLifecycleManager implements FileService {
 
     void adopt(SemanticFile file) {
         Objects.requireNonNull(file, "file must not be null");
-        filesByObjectId.put(file.objectId().value(), file);
+        storeFile(file.objectId().value(), file);
     }
 
     public Optional<SemanticFile> registeredFile(String objectId) {
@@ -153,7 +184,7 @@ public final class FileLifecycleManager implements FileService {
         SemanticFile file = SemanticFile.initial(ObjectId.of(objectId), metadata, initialVersion, now);
 
         rawContentStore.store(objectId, content);
-        filesByObjectId.put(objectId, file);
+        storeFile(objectId, file);
         audit(objectId, LifecycleEventType.REGISTRATION_RECORDED, null,
                 file.state(), SYSTEM_PRINCIPAL, false, null, null);
 
@@ -203,7 +234,7 @@ public final class FileLifecycleManager implements FileService {
                 LifecycleEventType.ANALYSIS_SUCCEEDED);
         SemanticFile analyzed = file.withState(target, clock.instant())
                 .withCertifiedDna(dnaVersion, clock.instant());
-        filesByObjectId.put(objectId, analyzed);
+        storeFile(objectId, analyzed);
         String reason = durationMs == null
                 ? null
                 : "analysis completed in " + durationMs + " ms";
@@ -216,7 +247,7 @@ public final class FileLifecycleManager implements FileService {
         SemanticFile file = requireExisting(objectId);
         FileState target = stateMachine.requireTarget(file.state(), LifecycleEventType.ANALYSIS_FAILED);
         SemanticFile failed = file.withState(target, clock.instant());
-        filesByObjectId.put(objectId, failed);
+        storeFile(objectId, failed);
         audit(objectId, LifecycleEventType.ANALYSIS_FAILED, file.state(), target,
                 SYSTEM_PRINCIPAL, false, reason, null);
     }
@@ -252,7 +283,7 @@ public final class FileLifecycleManager implements FileService {
         FileState origin = file.deletedFrom();
         stateMachine.requireUndoTarget(file.state(), origin);
         SemanticFile restored = file.withDeletionCleared(origin, clock.instant());
-        filesByObjectId.put(objectId, restored);
+        storeFile(objectId, restored);
         audit(objectId, LifecycleEventType.UNDO_DELETED, FileState.SOFT_DELETED, origin,
                 actor, false, null, null);
         return FileOperationResult.success(objectId,
@@ -288,7 +319,7 @@ public final class FileLifecycleManager implements FileService {
         SemanticFile afterRelease =
                 apply(beforeRelease, LifecycleEventType.RAW_RELEASED, actor, durationMs)
                         .withMetadata(beforeRelease.metadata().withoutStorageAddress(clock.instant()));
-        filesByObjectId.put(objectId, afterRelease);
+        storeFile(objectId, afterRelease);
         return FileOperationResult.success(objectId,
                 "Raw bytes permanently released. The Semantic Record survives and the object "
                         + "is now memorized.");
@@ -359,7 +390,7 @@ public final class FileLifecycleManager implements FileService {
         try {
             SemanticFile renamed = file.withMetadata(
                     file.metadata().withFileName(newFileName, clock.instant()));
-            filesByObjectId.put(objectId, renamed);
+            storeFile(objectId, renamed);
             audit(objectId, LifecycleEventType.METADATA_UPDATED, file.state(), file.state(),
                     actor, false, null, null);
             return FileOperationResult.success(objectId,
@@ -392,7 +423,7 @@ public final class FileLifecycleManager implements FileService {
         FileVersion next = new FileVersion(current.number() + 1, sha256,
                 content.length, clock.instant());
         SemanticFile updated = file.withAdditionalVersion(next);
-        filesByObjectId.put(objectId, updated);
+        storeFile(objectId, updated);
         rawContentStore.store(objectId, content);
         audit(objectId, LifecycleEventType.VERSION_ADDED, file.state(), file.state(),
                 actor, false, "version " + next.number() + " captured", null);
@@ -414,7 +445,7 @@ public final class FileLifecycleManager implements FileService {
                                          String principalId, String reason) {
         FileState target = stateMachine.requireTarget(before.state(), event);
         SemanticFile after = transitioned(before, target);
-        filesByObjectId.put(before.objectId().value(), after);
+        storeFile(before.objectId().value(), after);
         audit(before.objectId().value(), event, before.state(), target, principalId,
                 false, reason, null);
         return after;
@@ -424,7 +455,7 @@ public final class FileLifecycleManager implements FileService {
                                String principalId, Long durationMs) {
         FileState target = stateMachine.requireTarget(before.state(), event);
         SemanticFile after = transitioned(before, target);
-        filesByObjectId.put(before.objectId().value(), after);
+        storeFile(before.objectId().value(), after);
         audit(before.objectId().value(), event, before.state(), target, principalId,
                 false, null, durationMs);
         return after;
@@ -456,7 +487,10 @@ public final class FileLifecycleManager implements FileService {
         LifecycleEvent event = new LifecycleEvent(
                 auditLog.nextEventId(), objectId, type, from, to, principalId,
                 refused, reason, clock.instant(), durationMs);
-        auditLog.append(event);
+        LifecycleEvent stored = auditLog.append(event);
+        if (lifecyclePersistence != null) {
+            lifecyclePersistence.persistEvent(stored);
+        }
     }
 
     private SemanticFile requireExisting(String objectId) {

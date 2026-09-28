@@ -59,6 +59,11 @@ public class DevDataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        if (fileLifecycleManager.objectCount() > 0) {
+            log.info("Memory DB already contains {} object(s); seed data skipped.",
+                    fileLifecycleManager.objectCount());
+            return;
+        }
         String research = register("research-summary.txt", researchSummary());
         analyze(research);
 
@@ -140,19 +145,23 @@ public class DevDataSeeder implements ApplicationRunner {
                 # Measurements
 
                 PostgreSQL hosts the production workload for the analytics platform.
+                The reporting period covers Q3 2026.
                 Nightly batch jobs feed the reporting tables.
                 Index rebuilds were scheduled outside business hours.
                 Query latency improved for every dashboard in the product.
 
                 # Recommendations
 
+                The platform team must verify capacity before the Q4 2026 migration.
                 PostgreSQL provides the primary storage for the analytics platform.
-                The raw file  was released after the memory commit.
+                The raw file of this report was released after the memory commit.
                 """;
     }
 
     private static String meetingNotes() {
         return """
+                Planning notes for the next working session.
+                The agenda covers the delivery order and the review schedule.
                 """;
     }
 
@@ -168,6 +177,11 @@ public class DevDataSeeder implements ApplicationRunner {
                 password=password123
                 api_key=sk-live-9f8e7d6c5b4a
                 ops.contact=charithkumar369@gmail.com
+               
+                # Notes
+
+                The platform hosts the reporting workload.
+                Rotate the credentials before the Q4 2026 audit.
                 """;
     }
 }

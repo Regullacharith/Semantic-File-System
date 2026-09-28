@@ -16,15 +16,21 @@ public class MetaApiController {
     private final com.sfs.adapters.registry.AdapterRegistry adapterRegistry;
     private final com.sfs.adapters.resolve.AdapterResolver adapterResolver;
     private final com.sfs.core.rules.RuleRepository ruleRepository;
+    private final com.sfs.memory.H2MemoryDatabase memoryDatabase;
+    private final com.sfs.memory.VectorIndex vectorIndex;
 
     public MetaApiController(com.sfs.app.service.FileApplicationService fileApplicationService,
                              com.sfs.adapters.registry.AdapterRegistry adapterRegistry,
                              com.sfs.adapters.resolve.AdapterResolver adapterResolver,
-                             com.sfs.core.rules.RuleRepository ruleRepository) {
+                             com.sfs.core.rules.RuleRepository ruleRepository,
+                             com.sfs.memory.H2MemoryDatabase memoryDatabase,
+                             com.sfs.memory.VectorIndex vectorIndex) {
         this.fileApplicationService = fileApplicationService;
         this.adapterRegistry = adapterRegistry;
         this.adapterResolver = adapterResolver;
         this.ruleRepository = ruleRepository;
+        this.memoryDatabase = memoryDatabase;
+        this.vectorIndex = vectorIndex;
     }
 
 
@@ -63,6 +69,10 @@ public class MetaApiController {
                 "planReuses", ruleRepository.hits(),
                 "planDerivations", ruleRepository.derivations(),
                 "versionConflicts", ruleRepository.versionConflicts()));
+        Map<String, Object> storage = new java.util.LinkedHashMap<>(
+                memoryDatabase.storageStats());
+        storage.put("vectorEntries", vectorIndex.size());
+        body.put("storage", storage);
         body.put("adapters", adapterRegistry.descriptors().stream()
                 .map(descriptor -> Map.of(
                         "id", descriptor.id(),
@@ -77,10 +87,11 @@ public class MetaApiController {
         body.put("adapterResolutions", adapterResolver.resolutions());
         body.put("adapterRefusals", adapterResolver.refusals());
         body.put("note", "The file lifecycle manager, the semantic engine, the adapter "
-                + "framework, the semantic representation system and the reconstruction "
-                + "rules system are real subsystems. Search, reconstruction rendering and "
-                + "evaluation are mocked. Security boundaries are enforced with "
-                + "development identities until the security milestone.");
+                + "framework, the semantic representation system, the reconstruction "
+                + "rules system and the memory system are real subsystems. Search, "
+                + "reconstruction rendering and evaluation are mocked. Security "
+                + "boundaries are enforced with development identities until the "
+                + "security milestone.");
         return body;
     }
 }

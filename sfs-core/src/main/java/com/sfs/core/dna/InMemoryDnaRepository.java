@@ -8,10 +8,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class InMemoryDnaRepository {
+public final class InMemoryDnaRepository implements DnaRepository {
 
     private final Map<String, List<StoredDna>> versionsByObjectId = new ConcurrentHashMap<>();
 
+    @Override
     public StoredDna save(SemanticDna dna, Instant at) {
         Objects.requireNonNull(dna, "dna must not be null");
         Objects.requireNonNull(at, "at must not be null");
@@ -32,6 +33,7 @@ public final class InMemoryDnaRepository {
         return stored;
     }
 
+    @Override
     public Optional<StoredDna> find(String objectId) {
         List<StoredDna> history = versionsByObjectId.get(objectId);
         return history == null || history.isEmpty()
@@ -39,20 +41,24 @@ public final class InMemoryDnaRepository {
                 : Optional.of(history.getLast());
     }
 
+    @Override
     public List<StoredDna> history(String objectId) {
         List<StoredDna> history = versionsByObjectId.get(objectId);
         return history == null ? List.of() : List.copyOf(history);
     }
 
+    @Override
     public int nextDnaVersion(String objectId) {
         List<StoredDna> history = versionsByObjectId.get(objectId);
         return history == null || history.isEmpty() ? 1 : history.getLast().dna().dnaVersion() + 1;
     }
 
+    @Override
     public boolean remove(String objectId) {
         return objectId != null && versionsByObjectId.remove(objectId) != null;
     }
 
+    @Override
     public int objectCount() {
         return versionsByObjectId.size();
     }

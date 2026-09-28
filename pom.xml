@@ -19,6 +19,7 @@
         <module>sfs-lifecycle</module>
         <module>sfs-engine</module>
         <module>sfs-adapters</module>
+        <module>sfs-memory</module>
         <module>sfs-app</module>
         <module>sfs-ui</module>
     </modules>
@@ -89,6 +90,16 @@
             </dependency>
             <dependency>
                 <groupId>com.sfs</groupId>
+                <artifactId>sfs-memory</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>2.3.232</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sfs</groupId>
                 <artifactId>sfs-app</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -139,7 +150,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
-                   
+                  
                     <useSystemClassLoader>false</useSystemClassLoader>
                 </configuration>
             </plugin>

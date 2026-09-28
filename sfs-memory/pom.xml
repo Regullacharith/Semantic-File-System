@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfs</groupId>
+        <artifactId>sfs-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sfs-memory</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SFS Memory</name>
+    <description>
+        Memory System subsystem : H2-backed Memory DB with the
+        relational schema, semantic record repository, version history, graph
+        persistence, embedding rows, lifecycle persistence, transaction
+        boundaries, a rebuildable vector index and storage accounting.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-contracts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-lifecycle</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
