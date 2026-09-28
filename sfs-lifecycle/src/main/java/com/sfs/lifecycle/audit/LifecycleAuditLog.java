@@ -37,6 +37,23 @@ public final class LifecycleAuditLog {
         return "sfs-lfe-%06d".formatted(sequence.get() + 1);
     }
 
+    public void restore(LifecycleEvent event) {
+        Objects.requireNonNull(event, "event must not be null");
+        events.add(event);
+        eventsByObjectId
+                .computeIfAbsent(event.objectId(), ignored -> new CopyOnWriteArrayList<>())
+                .add(event);
+        sequence.getAndUpdate(current -> Math.max(current, numericId(event.eventId())));
+    }
+
+    private static long numericId(String eventId) {
+        try {
+            return Long.parseLong(eventId.substring("sfs-lfe-".length()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
     public List<LifecycleEvent> eventsFor(String objectId) {
         if (objectId == null || objectId.isBlank()) {
             return List.of();
