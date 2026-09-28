@@ -14,6 +14,13 @@ import com.sfs.engine.core.AnalysisJob;
 import com.sfs.engine.core.AnalysisJobListener;
 import com.sfs.engine.core.SemanticEngine;
 import com.sfs.lifecycle.core.ImportAcceptancePolicy;
+import com.sfs.lifecycle.core.LifecyclePersistence;
+import com.sfs.lifecycle.store.RawContentStore;
+import com.sfs.memory.H2LifecyclePersistence;
+import com.sfs.memory.H2MemoryDatabase;
+import com.sfs.memory.H2RawContentStore;
+import com.sfs.memory.MemoryDnaRepository;
+import com.sfs.memory.VectorIndex;
 import com.sfs.engine.level.AnalysisLevelPolicy;
 import com.sfs.engine.record.InMemorySemanticRecordStore;
 import com.sfs.lifecycle.core.AnalysisDispatcher;
@@ -28,8 +35,9 @@ import java.time.Clock;
 public class EngineWiringConfiguration {
 
     @Bean
-    public InMemorySemanticRecordStore semanticRecordStore() {
-        return new InMemorySemanticRecordStore();
+    public InMemorySemanticRecordStore semanticRecordStore(
+            com.sfs.core.dna.DnaRepository dnaRepository) {
+        return new InMemorySemanticRecordStore(dnaRepository);
     }
 
     @Bean
@@ -42,9 +50,54 @@ public class EngineWiringConfiguration {
         return AnalysisLevelPolicy.v1();
     }
 
+    @Bean(destroyMethod = "close")
+    public H2MemoryDatabase memoryDatabase(
+            @org.springframework.beans.factory.annotation.Value("${sfs.memory.path:data/sfs-memory}")
+            String memoryPath) {
+        boolean absolute = memoryPath.matches("^[A-Za-z]:[\\\\/].*")
+                || memoryPath.startsWith("/")
+                || memoryPath.startsWith("~");
+        H2MemoryDatabase database = new H2MemoryDatabase(
+                "jdbc:h2:file:" + (absolute ? "" : "./") + memoryPath
+                        + ";AUTO_SERVER=FALSE");
+        database.initialize();
+        return database;
+    }
+
     @Bean
-    public com.sfs.core.rules.RuleRepository ruleRepository() {
-        return new com.sfs.core.rules.RuleRepository();
+    public VectorIndex vectorIndex() {
+        return new VectorIndex();
+    }
+
+    @Bean
+    public com.sfs.core.dna.DnaRepository dnaRepository(H2MemoryDatabase memoryDatabase,
+                                                        VectorIndex vectorIndex) {
+        return new MemoryDnaRepository(memoryDatabase, vectorIndex);
+    }
+
+    @Bean
+    public RawContentStore rawContentStore(H2MemoryDatabase memoryDatabase) {
+        return new H2RawContentStore(memoryDatabase);
+    }
+
+    @Bean
+    public LifecyclePersistence lifecyclePersistence(H2MemoryDatabase memoryDatabase) {
+        return new H2LifecyclePersistence(memoryDatabase);
+    }
+
+    @Bean
+    public com.sfs.core.rules.RuleRepository ruleRepository(
+            H2MemoryDatabase memoryDatabase) {
+        com.sfs.core.rules.RuleRepository repository = new com.sfs.core.rules.RuleRepository();
+        for (com.sfs.core.rules.RuleSet loaded : memoryDatabase.loadRuleSets()) {
+            repository.save(loaded, java.time.Instant.now());
+        }
+        repository.setDerivationSink(set -> memoryDatabase.saveRuleSet(
+                set.objectId(), set.dnaVersion(),
+                com.sfs.core.rules.RuleSetCanonical.serialize(set),
+                com.sfs.core.rules.RuleSetCanonical.integrityHash(set),
+                java.time.Instant.now()));
+        return repository;
     }
 
     @Bean

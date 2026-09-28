@@ -2,6 +2,7 @@ package com.sfs.engine.record;
 
 import com.sfs.contracts.semantic.SemanticDnaView;
 import com.sfs.contracts.semantic.SemanticRecordService;
+import com.sfs.core.dna.DnaRepository;
 import com.sfs.core.dna.InMemoryDnaRepository;
 import com.sfs.core.dna.SemanticDna;
 import com.sfs.core.dna.StoredDna;
@@ -13,7 +14,15 @@ import java.util.Optional;
 
 public final class InMemorySemanticRecordStore implements SemanticRecordService {
 
-    private final InMemoryDnaRepository repository = new InMemoryDnaRepository();
+    private final DnaRepository repository;
+
+    public InMemorySemanticRecordStore() {
+        this(new InMemoryDnaRepository());
+    }
+
+    public InMemorySemanticRecordStore(DnaRepository repository) {
+        this.repository = Objects.requireNonNull(repository, "repository must not be null");
+    }
 
     public StoredDna save(SemanticDna dna) {
         Objects.requireNonNull(dna, "dna must not be null");
