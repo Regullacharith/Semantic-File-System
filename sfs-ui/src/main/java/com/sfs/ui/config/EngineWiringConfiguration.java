@@ -114,6 +114,11 @@ public class EngineWiringConfiguration {
     }
 
     @Bean
+    public com.sfs.reconstruction.SFSReconstructionModel reconstructionModel() {
+        return new com.sfs.reconstruction.model.DeterministicBaselineRenderer();
+    }
+
+    @Bean
     public AdapterRegistry adapterRegistry() {
         AdapterRegistry registry = new AdapterRegistry();
         registry.register(new TextAdapter());

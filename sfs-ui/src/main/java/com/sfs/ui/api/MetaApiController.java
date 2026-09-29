@@ -19,6 +19,7 @@ public class MetaApiController {
     private final com.sfs.memory.H2MemoryDatabase memoryDatabase;
     private final com.sfs.memory.VectorIndex vectorIndex;
     private final com.sfs.contracts.search.SearchService searchService;
+    private final com.sfs.reconstruction.SFSReconstructionModel reconstructionModel;
 
     public MetaApiController(com.sfs.app.service.FileApplicationService fileApplicationService,
                              com.sfs.adapters.registry.AdapterRegistry adapterRegistry,
@@ -26,7 +27,8 @@ public class MetaApiController {
                              com.sfs.core.rules.RuleRepository ruleRepository,
                              com.sfs.memory.H2MemoryDatabase memoryDatabase,
                              com.sfs.memory.VectorIndex vectorIndex,
-                             com.sfs.contracts.search.SearchService searchService) {
+                             com.sfs.contracts.search.SearchService searchService,
+                             com.sfs.reconstruction.SFSReconstructionModel reconstructionModel) {
         this.fileApplicationService = fileApplicationService;
         this.adapterRegistry = adapterRegistry;
         this.adapterResolver = adapterResolver;
@@ -34,6 +36,7 @@ public class MetaApiController {
         this.memoryDatabase = memoryDatabase;
         this.vectorIndex = vectorIndex;
         this.searchService = searchService;
+        this.reconstructionModel = reconstructionModel;
     }
 
 
@@ -62,11 +65,11 @@ public class MetaApiController {
         body.put("contractsVersion", CONTRACTS_VERSION);
         body.put("dnaSchemaVersion", DNA_SCHEMA_VERSION);
         body.put("rulesVersion", RULES_VERSION);
-        body.put("milestone", "M09 — Semantic Search Engine");
+        body.put("milestone", "M10 — SFS Reconstruction Model");
         body.put("enforcedSubsystems",
                 java.util.List.of("file-lifecycle", "semantic-engine", "adapter-framework",
                         "semantic-representation", "reconstruction-rules", "memory-system",
-                        "semantic-search"));
+                        "semantic-search", "reconstruction-model"));
         body.put("rules", Map.of(
                 "schemaVersion", com.sfs.core.rules.RuleSetCanonical.RULES_SCHEMA_VERSION,
                 "boundRuleSets", ruleRepository.size(),
@@ -83,6 +86,14 @@ public class MetaApiController {
         search.put("indexedVectors", vectorIndex.size());
         search.put("retrievalModes", java.util.List.of("OBJECT_ID_LOOKUP", "SEMANTIC"));
         body.put("search", search);
+        Map<String, Object> reconstruction = new java.util.LinkedHashMap<>();
+        reconstruction.put("model", reconstructionModel.modelId());
+        reconstruction.put("modelStatus", "real deterministic baseline; tiny-model "
+                + "evaluation pending the reconstruction engine milestone");
+        reconstruction.put("flow", "served by the development reconstruction service "
+                + "until the reconstruction engine milestone");
+        reconstruction.put("evaluation", "mock");
+        body.put("reconstruction", reconstruction);
         body.put("adapters", adapterRegistry.descriptors().stream()
                 .map(descriptor -> Map.of(
                         "id", descriptor.id(),
@@ -98,10 +109,12 @@ public class MetaApiController {
         body.put("adapterRefusals", adapterResolver.refusals());
         body.put("note", "The file lifecycle manager, the semantic engine, the adapter "
                 + "framework, the semantic representation system, the reconstruction "
-                + "rules system, the memory system and the semantic search engine are "
-                + "real subsystems. Reconstruction rendering and evaluation are mocked. "
-                + "Security boundaries are enforced with development identities until "
-                + "the security milestone.");
+                + "rules system, the memory system, the semantic search engine and the "
+                + "reconstruction model are real subsystems. The reconstruction flow is "
+                + "served by a development stand-in until the reconstruction engine "
+                + "milestone, and reconstruction evaluation is mocked. Security "
+                + "boundaries are enforced with development identities until the "
+                + "security milestone.");
         return body;
     }
 }
