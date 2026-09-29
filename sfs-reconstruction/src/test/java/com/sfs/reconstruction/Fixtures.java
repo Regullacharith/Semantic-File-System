@@ -164,7 +164,7 @@ public final class Fixtures {
 
                         # Credentials
 
-                        password=hunter2
+                        password=password123
                         api_key=sk-live-9f8e7d6c5b4a
                         """.getBytes(StandardCharsets.UTF_8);
             }
