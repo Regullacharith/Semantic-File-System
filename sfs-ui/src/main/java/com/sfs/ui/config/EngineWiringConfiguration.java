@@ -86,6 +86,13 @@ public class EngineWiringConfiguration {
     }
 
     @Bean
+    public com.sfs.contracts.search.SearchService searchService(
+            VectorIndex vectorIndex,
+            H2MemoryDatabase memoryDatabase) {
+        return new com.sfs.search.SearchEngine(vectorIndex, memoryDatabase);
+    }
+
+    @Bean
     public com.sfs.core.rules.RuleRepository ruleRepository(
             H2MemoryDatabase memoryDatabase) {
         com.sfs.core.rules.RuleRepository repository = new com.sfs.core.rules.RuleRepository();

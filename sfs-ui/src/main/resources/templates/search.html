@@ -70,7 +70,6 @@
 
             <p class="result__summary" th:text="${result.summary}">Summary</p>
 
-    
             <details class="evidence">
                 <summary class="evidence__toggle">
                     Why this matched
@@ -98,9 +97,11 @@
             reconstructs a file: reconstruction is a separate action you start explicitly.
         </p>
         <p>
-            This build uses a mock search service. Matching is keyword overlap against a fixed
-            sample corpus — there are no embeddings, no vector index and no reranking. Real
-            semantic retrieval arrives with the Memory System and Search Engine milestones.
+            Search runs on the real semantic search engine: your query is embedded into the same
+            vector space as stored documents, candidates are retrieved from the vector index,
+            reranked by the ranking profile and returned with evidence such as vector similarity,
+            matched concepts and relationships. Exact Object ID lookups bypass the vector search
+            entirely.
         </p>
     </section>
 

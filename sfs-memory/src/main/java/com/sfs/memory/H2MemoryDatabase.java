@@ -608,6 +608,53 @@ public final class H2MemoryDatabase implements AutoCloseable {
         }
     }
 
+    public List<ObjectSearchData> loadSearchData() {
+        List<ObjectSearchData> data = new ArrayList<>();
+        List<String> objectIds = new ArrayList<>();
+        try (Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery(
+                     "SELECT o.object_id, m.file_name, m.content_type, o.state "
+                             + "FROM semantic_object o JOIN metadata m ON m.object_id = o.object_id "
+                             + "ORDER BY o.object_id")) {
+            while (rows.next()) {
+                objectIds.add(rows.getString(1));
+                data.add(new ObjectSearchData(rows.getString(1), rows.getString(2),
+                        rows.getString(3), rows.getString(4),
+                        null, List.of(), List.of(), List.of(), List.of(),
+                        List.of(), 0, null));
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("loading search objects failed", e);
+        }
+        List<ObjectSearchData> complete = new ArrayList<>();
+        for (int i = 0; i < objectIds.size(); i++) {
+            complete.add(withGraph(data.get(i), objectIds.get(i)));
+        }
+        return List.copyOf(complete);
+    }
+
+    private ObjectSearchData withGraph(ObjectSearchData base, String objectId) {
+        return findStored(objectId)
+                .map(stored -> {
+                    SemanticDna dna = stored.dna();
+                    List<String> relationships = dna.relationships().stream()
+                            .map(relationship -> relationship.subject() + " "
+                                    + relationship.type() + " " + relationship.object())
+                            .toList();
+                    return new ObjectSearchData(
+                            base.objectId(), base.fileName(), base.contentType(),
+                            base.state(), dna.summary(),
+                            dna.concepts().stream().map(concept -> concept.name()).toList(),
+                            dna.topics().stream().map(topic -> topic.name()).toList(),
+                            dna.entities().stream().map(entity -> entity.name()).toList(),
+                            dna.facts().stream().map(fact -> fact.statement()).toList(),
+                            relationships,
+                            dna.security().protectedReferences().size(),
+                            dna.embedding().dimensions() > 0 ? dna.embedding().vector() : null);
+                })
+                .orElse(base);
+    }
+
     public Map<String, Object> storageStats() {
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("dnaObjects", dnaObjectCount());
