@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfs</groupId>
+        <artifactId>sfs-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sfs-reconstruction</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SFS Reconstruction</name>
+    <description>
+        SFS Reconstruction Model subsystem : the frozen model
+        contract, the deterministic baseline renderer, the semantic DNA,
+        structure, fact/entity and relationship encoders, the tiny decoder
+        interface with its default implementation, the constraint interface,
+        the reproducible benchmark harness and the future-training hook. The
+        model consumes Semantic DNA and Reconstruction Rules and can never
+        silently invent unsupported critical facts. It has no dependency on
+        the Memory DB or Search subsystems, so it can be replaced without
+        touching them.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-contracts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
