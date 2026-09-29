@@ -16,9 +16,9 @@
 
     <name>SFS UI</name>
     <description>
-      server-rendered web UI. View models, controllers, templates and
-      mock service implementations. Contains NO semantic, persistence, reconstruction,
-      evaluation or security logic.
+     server-rendered web UI. View models, controllers, templates and
+     mock service implementations. Contains NO semantic, persistence, reconstruction,
+     evaluation or security logic.
     </description>
 
     <dependencies>
@@ -40,6 +40,11 @@
         <dependency>
             <groupId>com.sfs</groupId>
             <artifactId>sfs-memory</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-search</artifactId>
         </dependency>
 
         <dependency>

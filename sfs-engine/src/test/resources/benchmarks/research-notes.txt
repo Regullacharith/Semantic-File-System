@@ -12,4 +12,4 @@ Embeddings support retrieval but do not replace explicit facts.
 
 Recall improved by 12 percent after the embedding change.
 The retrieval prototype uses the hashed vector space for search.
-Embeddings support the retrieval quality targets .
+Embeddings support the retrieval quality targets for 2026.
