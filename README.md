@@ -1,23 +1,23 @@
 # Semantic File System (SFS)
 
-SFS is a Java 21, multi-module Maven project that treats files as semantic objects rather than just raw byte containers. It combines a file lifecycle manager, a text-analysis pipeline, semantic memory and search components, reconstruction rules, and a Spring MVC web UI with a REST API.
+SFS is a Java 21, multi-module Maven project that treats files as semantic objects instead of plain byte containers. The platform combines lifecycle management, text analysis, semantic memory, search, reconstruction planning, and a Spring MVC web layer with a REST API.
 
-The project is intentionally structured around clear boundaries between domain logic, service contracts, lifecycle behavior, adapters, semantic processing, and presentation.
+The project is intentionally split into clear boundaries: domain logic, contracts, lifecycle behavior, adapters, semantic processing, storage, search, and presentation.
 
 ---
 
 ## Why this project exists
 
-The core idea is that a file can be understood as a combination of:
+A file is modeled as more than a blob of bytes. In SFS, each file can carry:
 
 - identity and metadata
 - raw content
 - lifecycle state
-- semantic meaning or "DNA"
-- sensitive value handling
+- semantic meaning or “DNA”
+- protected or sensitive value handling
 - reconstruction and memory semantics
 
-This separates the physical artifact from its lifecycle and meaning, allowing the system to model analysis, retention, deletion, memory, and reconstruction without conflating storage with knowledge.
+This separation allows the system to reason about analysis, retention, deletion, memory, and reconstruction without conflating storage with knowledge.
 
 ---
 
@@ -28,24 +28,17 @@ Semantic-File-System/
 ├── pom.xml
 ├── LICENSE
 ├── README.md
-├── sfs-core/
-│   └── Core domain model and semantic DNA concepts
-├── sfs-contracts/
-│   └── Shared interfaces and boundary contracts
-├── sfs-lifecycle/
-│   └── Lifecycle state machine and deletion rules
-├── sfs-engine/
-│   └── Semantic processing orchestration
-├── sfs-adapters/
-│   └── Adapter SPI, registry, and text processing
-├── sfs-memory/
-│   └── H2-backed persistence and vector index
-├── sfs-search/
-│   └── Query parsing, semantic retrieval, and ranking
-├── sfs-app/
-│   └── Application services and API models
-├── sfs-ui/
-│   └── Spring Boot web UI and REST API
+├── sfs-core/            # domain model and semantic DNA concepts
+├── sfs-contracts/       # API contracts and shared interfaces
+├── sfs-lifecycle/       # lifecycle state machine, versioning, and audit
+├── sfs-engine/          # semantic analysis orchestration
+├── sfs-adapters/        # adapter SPI, registry, and text ingestion
+├── sfs-memory/          # H2 persistence and memory indexing
+├── sfs-search/          # semantic query processing and ranking
+├── sfs-reconstruction/  # reconstruction rules and planning
+├── sfs-app/             # application services and request/response models
+├── sfs-ui/              # Spring Boot UI and REST API
+└── target/              # generated build output
 ```
 
 ---
@@ -54,19 +47,19 @@ Semantic-File-System/
 
 ### sfs-core
 
-Contains object identity, the semantic DNA model, canonical serialization, validation, and reconstruction-rule planning. It has no UI or storage infrastructure concerns.
+Defines identity, semantic DNA, canonical serialization, validation, and reconstruction-rule planning. This module keeps domain concerns isolated from UI or persistence infrastructure.
 
 ### sfs-contracts
 
-Defines shared contracts and API-facing views for files, lifecycle audit, semantic records, search, reconstruction, evaluation, and security.
+Provides shared contracts for files, lifecycle audit, semantic records, search, reconstruction, evaluation, and security boundaries.
 
 ### sfs-lifecycle
 
-Implements file registration, lifecycle transitions, version tracking, raw-content handling, memory operations, deletion gates, recovery, and lifecycle audit.
+Handles file registration, lifecycle transitions, version tracking, raw content management, memory operations, deletion gates, restoration, and audit events.
 
 ### sfs-adapters
 
-Provides the adapter SPI, registry, and resolver. The implemented text adapter accepts plain text and Markdown formats, normalizes UTF-8 text, and extracts document structure.
+Contains the adapter SPI, registry, resolver, and the text adapter implementation. It currently accepts plain text and Markdown formats, normalizes UTF-8 content, and extracts document structure.
 
 ### sfs-engine
 
@@ -74,37 +67,48 @@ Coordinates adapter routing and the semantic analysis pipeline, including summar
 
 ### sfs-memory
 
-Provides H2-backed persistence for lifecycle data, raw content, versions, semantic DNA, and reconstruction rules. The vector index used for retrieval is currently in memory.
+Stores lifecycle data, raw content, versions, semantic DNA, and reconstruction records in H2. The retrieval index is currently in-memory and rebuilt from persisted semantic records at startup.
 
 ### sfs-search
 
-Implements query parsing, semantic retrieval, candidate ranking, and evidence-rich search results over the memory index.
+Implements query parsing, semantic retrieval, candidate ranking, and evidence-rich results over the in-memory search index.
+
+### sfs-reconstruction
+
+Contains reconstruction logic and rule planning used to rebuild or interpret file meaning from semantic and lifecycle context.
 
 ### sfs-app
 
-Contains application services and request/response models that coordinate file, search, reconstruction, evaluation, and security workflows through the shared contracts.
+Contains application services and DTO/request models that coordinate file, search, reconstruction, evaluation, and security workflows through the shared contracts.
 
 ### sfs-ui
 
-Hosts the Spring Boot entry point, Thymeleaf screens, and REST controllers. The UI includes dashboard, file/object browsing, search, reconstruction, evaluation, and settings views; the REST API is rooted at `/api/v1`.
+Hosts the Spring Boot application, Thymeleaf views, and REST controllers. The UI includes file browsing, search, reconstruction, evaluation, settings, and lifecycle views. The REST API is rooted under `/api/v1`.
 
 ---
 
 ## Current implementation status
 
-This repository is a working prototype, not a production filesystem. The core lifecycle, text analysis, semantic representation, H2 persistence, and reconstruction-rule planning components are implemented. The default UI profile is `mock`: search, reconstruction, evaluation, and security-facing services use development/mock implementations, and sample files are seeded on first startup. The search engine and persistence components also exist, but default mock-profile UI workflows should not be mistaken for production integrations.
+This repository is a working prototype rather than a production-grade filesystem. The core lifecycle, text analysis, semantic representation, persistence, and reconstruction-rule planning are implemented, but several flows are intentionally mocked for development and demonstration.
+
+The default profile is `mock`, which means:
+
+- search services are simulated or development-oriented
+- reconstruction and evaluation flows are mocked
+- security and authentication are not production-grade
+- sample files are seeded on first startup when the database is empty
 
 Current emphasis includes:
 
-- text and Markdown ingestion through the text adapter (`.txt`, `.text`, `.md`, `.markdown`, and `.log`)
+- ingestion of text and Markdown content (`.txt`, `.text`, `.md`, `.markdown`, and `.log`)
 - semantic DNA generation and validation
 - file lifecycle, version history, audit events, soft deletion, and gated raw-data purge
 - H2-backed persistence for lifecycle, content, and semantic records
-- semantic query parsing, vector retrieval, and ranking components
-- a server-rendered UI and REST API for file, search, lifecycle, reconstruction, and evaluation workflows
-- protected-value detection and protected references in semantic output
+- semantic query parsing, vector retrieval, and ranking
+- a browser UI and REST API for file, search, lifecycle, reconstruction, and evaluation workflows
+- protected value detection and protected references in semantic output
 
-The modules are layered so domain logic, application workflows, storage, and presentation can evolve independently. The default mock profile is intended for local development and demonstration, not production use.
+The layered architecture is designed so domain logic, application workflows, persistence, and presentation can evolve independently.
 
 ---
 
@@ -128,13 +132,13 @@ Key characteristics:
 - soft deletion is reversible
 - raw-data purge is a distinct, gated action
 - semantic records may remain after authorized raw-data removal
-- invalid state transitions are rejected
+- invalid transitions are rejected
 
 ---
 
 ## Security and sensitive data
 
-The analysis pipeline detects protected values and records protected references rather than treating sensitive values as ordinary semantic facts. This is a prototype boundary, not a complete production security solution: the default profile uses development identities and mock authentication/authorization.
+The analysis pipeline detects protected values and records protected references rather than treating sensitive values as ordinary semantic facts. This is a prototype boundary, not a production security solution: the default profile uses development identities and mock authorization flows.
 
 Detectors and policy cover values such as:
 
@@ -175,7 +179,7 @@ java --version
 mvn --version
 ```
 
-The repository has no Maven wrapper; use an installed Maven 3.9+ executable.
+This repository does not include a Maven wrapper, so use an installed Maven 3.9+ executable.
 
 ---
 
@@ -197,7 +201,7 @@ mvn clean package
 
 ## Run the application
 
-Start the Spring Boot UI from the repository root:
+Start the UI from the repository root:
 
 ```bash
 mvn spring-boot:run -pl sfs-ui
@@ -205,7 +209,7 @@ mvn spring-boot:run -pl sfs-ui
 
 This builds the dependent modules and launches the application defined by the UI module. The entry point is `com.sfs.ui.SfsUiApplication`.
 
-By default, the UI binds to `127.0.0.1` on port `8080` and starts with the `mock` profile:
+By default, the app binds to `127.0.0.1` on port `8080` and starts with the `mock` profile:
 
 ```text
 http://localhost:8080
@@ -220,7 +224,7 @@ The `mock` profile seeds sample files on first startup when the database is empt
 | `SFS_UI_ADDRESS` | `127.0.0.1` | Bind address |
 | `SFS_MEMORY_PATH` | `data/sfs-memory` | H2 file database path |
 
-The REST API is organized under `/api/v1`. Main endpoint groups include `/health`, `/version`, `/files`, `/search`, `/reconstructions`, and `/evaluations`. File import is limited to 5 MB per file and request by default.
+The REST API is organized under `/api/v1`. Main endpoint groups include `/health`, `/version`, `/files`, `/search`, `/reconstructions`, and `/evaluations`. File import is limited to 5 MB per file and per request by default.
 
 ---
 
@@ -235,7 +239,7 @@ Current limitations include:
 - the default profile uses mock search, reconstruction, evaluation, and security services, alongside development identities
 - no kernel-level or OS-backed filesystem integration
 - no production authentication, authorization, or multi-user tenancy model
-- no guarantee of reconstruction fidelity; reconstruction rendering and evaluation are currently mocked in the UI
+- reconstruction fidelity is not guaranteed; rendering and evaluation remain mocked in the UI
 
 ---
 
