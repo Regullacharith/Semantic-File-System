@@ -25,7 +25,8 @@ public final class EngineTestSupport {
             FileLifecycleManager lifecycle,
             InMemorySemanticRecordStore records,
             SemanticEngine engine,
-            com.sfs.core.rules.ReconstructionPlanner planner) {
+            com.sfs.core.rules.ReconstructionPlanner planner,
+            com.sfs.core.dna.InMemoryDnaRepository dnaRepository) {
     }
 
     private EngineTestSupport() {
@@ -35,7 +36,10 @@ public final class EngineTestSupport {
         InMemoryRawContentStore raw = new InMemoryRawContentStore();
         FileLifecycleManager lifecycle = new FileLifecycleManager(
                 Clock.systemUTC(), raw, DevDataSeeder.scriptedObjectIdService(), null);
-        InMemorySemanticRecordStore records = new InMemorySemanticRecordStore();
+        com.sfs.core.dna.InMemoryDnaRepository dnaRepository =
+                new com.sfs.core.dna.InMemoryDnaRepository();
+        InMemorySemanticRecordStore records =
+                new InMemorySemanticRecordStore(dnaRepository);
         AnalysisInputProvider inputProvider = objectId -> lifecycle.registeredFile(objectId)
                 .flatMap(file -> raw.retrieve(objectId)
                         .map(bytes -> new AnalysisInput(objectId,
@@ -80,6 +84,6 @@ public final class EngineTestSupport {
         } catch (Exception e) {
             throw new IllegalStateException("seed analysis failed", e);
         }
-        return new EngineSuite(lifecycle, records, engine, planner);
+        return new EngineSuite(lifecycle, records, engine, planner, dnaRepository);
     }
 }

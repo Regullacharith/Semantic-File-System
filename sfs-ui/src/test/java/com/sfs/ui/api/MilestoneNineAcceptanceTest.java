@@ -135,8 +135,9 @@ class MilestoneNineAcceptanceTest {
         assertThat(version.statusCode()).isEqualTo(200);
         String body = version.body();
         assertThat(body)
-                .contains("\"milestone\":\"M09")
+                .contains("\"milestone\":\"M11")
                 .contains("\"search\":{")
+                .contains("\"reconstruction\":{")
                 .contains("\"engine\":\"sfs-search/0.1\"")
                 .contains("\"indexedVectors\":")
                 .contains("semantic-search")

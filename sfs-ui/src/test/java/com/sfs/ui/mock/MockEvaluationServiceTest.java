@@ -3,47 +3,69 @@ package com.sfs.ui.mock;
 import com.sfs.contracts.evaluation.EvaluationAvailability;
 import com.sfs.contracts.evaluation.FidelityDimension;
 import com.sfs.contracts.evaluation.FidelityReportView;
+import com.sfs.reconstruction.PlanConstraintInterface;
+import com.sfs.reconstruction.engine.ReconstructionArtifactFactory;
+import com.sfs.reconstruction.engine.ReconstructionEngine;
+import com.sfs.reconstruction.engine.ReconstructionJob;
+import com.sfs.reconstruction.engine.ReconstructionPostProcessor;
+import com.sfs.reconstruction.model.DeterministicBaselineRenderer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Verifies the mock evaluator's honesty rules.
- *
- * <p>Wired to the real reconstruction, file and semantic mocks so the services are exercised
- * together as the running application uses them.
- */
 @DisplayName("Mock evaluation service")
 class MockEvaluationServiceTest {
 
-    /** Memorized: raw bytes deleted, so no comparison is possible. */
     private static final String MEMORIZED_OBJECT = "sfs-obj-0002-e5f6a7b8";
 
-    /** Analyzed with the original still present: measurable. */
     private static final String LIVE_OBJECT = "sfs-obj-0001-a1b2c3d4";
 
-    /** Holds protected values, so reconstruction is rejected and no artifact exists. */
     private static final String REJECTED_OBJECT = "sfs-obj-0004-b3c4d5e6";
 
-    private MockReconstructionService reconstructionService;
+    private ReconstructionEngine reconstructionService;
     private MockEvaluationService service;
 
     @BeforeEach
     void setUp() {
         var suite = EngineTestSupport.seeded();
-        reconstructionService = new MockReconstructionService(
-                suite.lifecycle(), suite.records(), suite.records(), suite.planner());
+        reconstructionService = new ReconstructionEngine(
+                new com.sfs.reconstruction.engine.DnaRuleLoader(
+                        suite.dnaRepository(), suite.lifecycle()),
+                suite.planner(),
+                new DeterministicBaselineRenderer(),
+                new PlanConstraintInterface(),
+                new ReconstructionPostProcessor(),
+                new ReconstructionArtifactFactory());
         service = new MockEvaluationService(reconstructionService, suite.lifecycle());
+    }
+
+    private void awaitTerminal(String jobId) {
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline) {
+            Optional<ReconstructionJob> job =
+                    reconstructionService.findJobRecord(jobId);
+            if (job.isPresent() && job.get().terminal()) {
+                return;
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("await interrupted", e);
+            }
+        }
+        throw new IllegalStateException("job never reached a terminal state");
     }
 
     @Test
     @DisplayName("refuses to score a reconstruction whose original was deleted")
     void refusesToScoreWithoutAnOriginal() {
-        // The case most likely to tempt a fabricated number: the reconstruction succeeded,
-        // but there is no original left to measure it against.
         String jobId = reconstructionService.requestReconstruction(MEMORIZED_OBJECT).jobId();
+        awaitTerminal(jobId);
 
         EvaluationAvailability evaluation = service.findEvaluation(jobId);
 
@@ -58,6 +80,7 @@ class MockEvaluationServiceTest {
     @DisplayName("produces a report when the original is still present")
     void producesReportWhenComparisonIsPossible() {
         String jobId = reconstructionService.requestReconstruction(LIVE_OBJECT).jobId();
+        awaitTerminal(jobId);
 
         EvaluationAvailability evaluation = service.findEvaluation(jobId);
 
@@ -69,6 +92,7 @@ class MockEvaluationServiceTest {
     @DisplayName("reports no evaluation for a rejected reconstruction")
     void noEvaluationWithoutAnArtifact() {
         String jobId = reconstructionService.requestReconstruction(REJECTED_OBJECT).jobId();
+        awaitTerminal(jobId);
 
         assertThat(service.findEvaluation(jobId).status())
                 .isEqualTo(EvaluationAvailability.Status.NO_ARTIFACT);
@@ -85,6 +109,7 @@ class MockEvaluationServiceTest {
     @DisplayName("scores every dimension separately")
     void scoresEveryDimension() {
         String jobId = reconstructionService.requestReconstruction(LIVE_OBJECT).jobId();
+        awaitTerminal(jobId);
         FidelityReportView report = service.findEvaluation(jobId).reportIfAvailable().orElseThrow();
 
         for (FidelityDimension dimension : FidelityDimension.values()) {
@@ -95,9 +120,8 @@ class MockEvaluationServiceTest {
     @Test
     @DisplayName("shows a factual shortfall alongside a strong semantic score")
     void surfacesFactualShortfall() {
-        // The fixture is deliberately shaped this way: a report where semantic quality is
-        // high and factual fidelity is not is exactly what an aggregate score would hide.
         String jobId = reconstructionService.requestReconstruction(LIVE_OBJECT).jobId();
+        awaitTerminal(jobId);
         FidelityReportView report = service.findEvaluation(jobId).reportIfAvailable().orElseThrow();
 
         assertThat(report.scoreFor(FidelityDimension.SEMANTIC))
@@ -109,6 +133,7 @@ class MockEvaluationServiceTest {
     @DisplayName("records storage cost beside fidelity")
     void recordsStorageCost() {
         String jobId = reconstructionService.requestReconstruction(LIVE_OBJECT).jobId();
+        awaitTerminal(jobId);
         FidelityReportView report = service.findEvaluation(jobId).reportIfAvailable().orElseThrow();
 
         assertThat(report.originalBytes()).isPositive();
@@ -119,8 +144,10 @@ class MockEvaluationServiceTest {
     @Test
     @DisplayName("lists unmeasurable outcomes rather than omitting them")
     void listsUnmeasurableOutcomes() {
-        reconstructionService.requestReconstruction(MEMORIZED_OBJECT);
-        reconstructionService.requestReconstruction(REJECTED_OBJECT);
+        String memorized = reconstructionService.requestReconstruction(MEMORIZED_OBJECT).jobId();
+        String rejected = reconstructionService.requestReconstruction(REJECTED_OBJECT).jobId();
+        awaitTerminal(memorized);
+        awaitTerminal(rejected);
 
         assertThat(service.listEvaluations())
                 .hasSize(2)
@@ -134,6 +161,7 @@ class MockEvaluationServiceTest {
     @DisplayName("names the evaluator that produced each report")
     void namesEvaluator() {
         String jobId = reconstructionService.requestReconstruction(LIVE_OBJECT).jobId();
+        awaitTerminal(jobId);
         FidelityReportView report = service.findEvaluation(jobId).reportIfAvailable().orElseThrow();
 
         assertThat(report.evaluatorVersion()).isNotBlank().contains("mock");

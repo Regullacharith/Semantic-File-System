@@ -77,6 +77,19 @@ class MilestoneOneAcceptanceTest {
                 HttpResponse.BodyHandlers.ofString());
     }
 
+    private void awaitTerminal(HttpClient client, String jobId) throws Exception {
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline) {
+            String body = get(client, "/reconstruction/job/" + jobId).body();
+            if (body.contains("Completed") || body.contains("Rejected")
+                    || body.contains("Failed")) {
+                return;
+            }
+            Thread.sleep(20);
+        }
+        throw new AssertionError("job " + jobId + " never reached a terminal state");
+    }
+
     private String lastMatch(Pattern pattern, String text) {
         Matcher matcher = pattern.matcher(text);
         String found = null;
@@ -227,6 +240,7 @@ class MilestoneOneAcceptanceTest {
             HttpClient client = client();
 
             String jobId = lastMatch(JOB_ID, post(client, "/reconstruction/sfs-obj-0001-a1b2c3d4").body());
+            awaitTerminal(client, jobId);
             String artifact = get(client, "/reconstruction/job/" + jobId + "/artifact").body();
 
             assertThat(artifact).contains("NOT THE ORIGINAL FILE");
@@ -253,6 +267,7 @@ class MilestoneOneAcceptanceTest {
             HttpClient client = client();
 
             String jobId = lastMatch(JOB_ID, post(client, "/reconstruction/sfs-obj-0001-a1b2c3d4").body());
+            awaitTerminal(client, jobId);
             HttpResponse<String> response = get(client, "/evaluation/" + jobId);
 
             assertThat(response.statusCode()).isEqualTo(200);
@@ -265,6 +280,7 @@ class MilestoneOneAcceptanceTest {
             HttpClient client = client();
 
             String jobId = lastMatch(JOB_ID, post(client, "/reconstruction/sfs-obj-0002-e5f6a7b8").body());
+            awaitTerminal(client, jobId);
             HttpResponse<String> response = get(client, "/evaluation/" + jobId);
 
             assertThat(response.statusCode()).isEqualTo(200);

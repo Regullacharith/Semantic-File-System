@@ -50,6 +50,10 @@
             <groupId>com.sfs</groupId>
             <artifactId>sfs-reconstruction</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-reconstruction-engine</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.sfs</groupId>

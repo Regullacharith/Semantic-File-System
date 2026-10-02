@@ -66,6 +66,7 @@ class MilestoneSevenAcceptanceTest {
         assertThat(matcher.find()).isTrue();
         String jobId = matcher.group();
 
+        awaitTerminal(jobId);
         HttpResponse<String> job = send("GET", "/api/v1/jobs/" + jobId, OPERATOR, null);
         assertThat(job.statusCode()).isEqualTo(200);
         String body = job.body();
@@ -74,6 +75,18 @@ class MilestoneSevenAcceptanceTest {
                 .contains("sfs-rules/0.2")
                 .contains("Plan rules")
                 .contains("required fact");
+    }
+
+    private void awaitTerminal(String jobId) throws Exception {
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline) {
+            if (send("GET", "/api/v1/jobs/" + jobId, OPERATOR, null).body()
+                    .contains("\"terminal\":true")) {
+                return;
+            }
+            Thread.sleep(20);
+        }
+        throw new AssertionError("job " + jobId + " never reached a terminal state");
     }
 
     @Test
