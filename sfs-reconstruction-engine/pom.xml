@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfs</groupId>
+        <artifactId>sfs-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sfs-reconstruction-engine</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SFS Reconstruction Engine</name>
+    <description>
+        Reconstruction Engine subsystem : the request manager and
+        job state machine, the DNA and rule loader, planner integration, model
+        execution, constraint checking, post-processing and TXT artifact
+        generation. Coordinates end-to-end semantic reconstruction from the
+        Memory DB through model contract and produces a new,
+        labeled TXT artifact. Original bytes are never required; protected
+        references are refused before any reconstruction runs; jobs are
+        immutable and auditable.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-contracts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-reconstruction</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
