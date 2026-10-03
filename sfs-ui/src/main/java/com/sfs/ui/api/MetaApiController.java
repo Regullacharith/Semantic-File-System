@@ -21,6 +21,7 @@ public class MetaApiController {
     private final com.sfs.contracts.search.SearchService searchService;
     private final com.sfs.reconstruction.SFSReconstructionModel reconstructionModel;
     private final com.sfs.reconstruction.engine.ReconstructionEngine reconstructionEngine;
+    private final com.sfs.contracts.evaluation.EvaluationService evaluationService;
 
     public MetaApiController(com.sfs.app.service.FileApplicationService fileApplicationService,
                              com.sfs.adapters.registry.AdapterRegistry adapterRegistry,
@@ -30,7 +31,8 @@ public class MetaApiController {
                              com.sfs.memory.VectorIndex vectorIndex,
                              com.sfs.contracts.search.SearchService searchService,
                              com.sfs.reconstruction.SFSReconstructionModel reconstructionModel,
-                             com.sfs.reconstruction.engine.ReconstructionEngine reconstructionEngine) {
+                             com.sfs.reconstruction.engine.ReconstructionEngine reconstructionEngine,
+                             com.sfs.contracts.evaluation.EvaluationService evaluationService) {
         this.fileApplicationService = fileApplicationService;
         this.adapterRegistry = adapterRegistry;
         this.adapterResolver = adapterResolver;
@@ -40,6 +42,7 @@ public class MetaApiController {
         this.searchService = searchService;
         this.reconstructionModel = reconstructionModel;
         this.reconstructionEngine = reconstructionEngine;
+        this.evaluationService = evaluationService;
     }
 
 
@@ -68,12 +71,12 @@ public class MetaApiController {
         body.put("contractsVersion", CONTRACTS_VERSION);
         body.put("dnaSchemaVersion", DNA_SCHEMA_VERSION);
         body.put("rulesVersion", RULES_VERSION);
-        body.put("milestone", "M11 — Reconstruction Engine");
+        body.put("milestone", "M12 — Evaluation & Fidelity System");
         body.put("enforcedSubsystems",
                 java.util.List.of("file-lifecycle", "semantic-engine", "adapter-framework",
                         "semantic-representation", "reconstruction-rules", "memory-system",
                         "semantic-search", "reconstruction-model",
-                        "reconstruction-engine"));
+                        "reconstruction-engine", "evaluation-fidelity"));
         body.put("rules", Map.of(
                 "schemaVersion", com.sfs.core.rules.RuleSetCanonical.RULES_SCHEMA_VERSION,
                 "boundRuleSets", ruleRepository.size(),
@@ -97,9 +100,17 @@ public class MetaApiController {
                 + "the reconstruction engine");
         reconstruction.put("modelStatus", "real deterministic baseline; the decoder "
                 + "slot is swappable");
-        reconstruction.put("evaluation", "mock");
+        reconstruction.put("evaluation", "real; measured by "
+                + com.sfs.evaluation.FidelityEvaluator.EVALUATOR_VERSION);
         reconstruction.putAll(reconstructionEngine.diagnostics());
         body.put("reconstruction", reconstruction);
+        Map<String, Object> evaluation = new java.util.LinkedHashMap<>();
+        evaluation.put("evaluator", com.sfs.evaluation.FidelityEvaluator.EVALUATOR_VERSION);
+        evaluation.put("dimensions", java.util.List.of("SEMANTIC", "STRUCTURAL",
+                "FACTUAL", "ENTITY", "RELATIONSHIP", "COMPLETENESS"));
+        evaluation.put("criticalFactChecks", "explicit");
+        evaluation.put("calibration", "stated confidence vs observed survival, per bin");
+        body.put("evaluation", evaluation);
         body.put("adapters", adapterRegistry.descriptors().stream()
                 .map(descriptor -> Map.of(
                         "id", descriptor.id(),
@@ -116,10 +127,9 @@ public class MetaApiController {
         body.put("note", "The file lifecycle manager, the semantic engine, the adapter "
                 + "framework, the semantic representation system, the reconstruction "
                 + "rules system, the memory system, the semantic search engine, the "
-                + "reconstruction model and the reconstruction engine are real "
-                + "subsystems. Reconstruction evaluation is mocked. Security boundaries "
-                + "are enforced with development identities until the security "
-                + "milestone.");
+                + "reconstruction model, the reconstruction engine and the evaluation "
+                + "and fidelity system are real subsystems. Security boundaries are "
+                + "enforced with development identities until the security milestone.");
         return body;
     }
 }

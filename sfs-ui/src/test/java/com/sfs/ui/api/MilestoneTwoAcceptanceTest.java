@@ -275,11 +275,12 @@ class MilestoneTwoAcceptanceTest {
         }
 
         @Test
-        @DisplayName("declares the mocked state of every subsystem")
+        @DisplayName("declares the real state of every subsystem honestly")
         void declaresMockedState() throws Exception {
             String body = get("/api/v1/version").body();
 
-            assertThat(body).contains("mocked");
+            assertThat(body).contains("real subsystems");
+            assertThat(body).contains("development identities");
         }
 
         @Test

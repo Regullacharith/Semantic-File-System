@@ -54,6 +54,10 @@
             <groupId>com.sfs</groupId>
             <artifactId>sfs-reconstruction-engine</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-evaluation</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.sfs</groupId>
@@ -85,7 +89,7 @@
 
     <build>
         <plugins>
-            
+         
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

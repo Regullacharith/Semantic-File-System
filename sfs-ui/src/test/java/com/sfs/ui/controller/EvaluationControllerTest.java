@@ -27,9 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-/**
- * Verifies the evaluation and fidelity view.
- */
 @WebMvcTest(EvaluationController.class)
 @DisplayName("Evaluation and fidelity view")
 class EvaluationControllerTest {
@@ -164,14 +161,14 @@ class EvaluationControllerTest {
     }
 
     @Test
-    @DisplayName("states that the displayed figures were not measured")
+    @DisplayName("states that the displayed figures were measured")
     void disclosesMockEvaluator() throws Exception {
         given(evaluationService.findEvaluation(JOB_ID))
                 .willReturn(EvaluationAvailability.available(report(0.76, 2)));
 
         mockMvc.perform(get("/evaluation/" + JOB_ID))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Nothing was measured")));
+                .andExpect(content().string(containsString("measured, not asserted")));
     }
 
     // ------------------------------------------------------- unmeasurable
