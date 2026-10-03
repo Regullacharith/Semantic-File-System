@@ -101,9 +101,10 @@ class MilestoneThirteenAcceptanceTest {
         send("POST", "/api/v1/files/" + objectId + "/analyze", "operator", null);
         long deadline = System.currentTimeMillis() + 20_000;
         while (System.currentTimeMillis() < deadline) {
-            String files = send("GET", "/api/v1/files", "operator", null).body();
-            if (files.contains("\"objectId\":\"" + objectId + "\"")
-                    && (files.contains("ANALYZED") || files.contains("MEMORIZABLE"))) {
+            String file = send("GET", "/api/v1/files/" + objectId, "operator",
+                    null).body();
+            if (file.contains("\"status\":\"ANALYZED\"")
+                    || file.contains("\"status\":\"MEMORIZABLE\"")) {
                 return objectId;
             }
             Thread.sleep(50);
@@ -202,7 +203,7 @@ class MilestoneThirteenAcceptanceTest {
 
         assertThat(version.statusCode()).isEqualTo(200);
         assertThat(version.body())
-                .contains("\"milestone\":\"M13")
+                .contains("\"milestone\":\"M14")
                 .contains("\"security\":{")
                 .contains("sfs-security/0.1")
                 .contains("security-privacy")
