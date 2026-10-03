@@ -19,7 +19,7 @@
         Semantic Engine subsystem : orchestrator, adapter-routed
         input, deterministic semantic pipeline, change detection cache,
         background worker and analysis levels. Produces Semantic DNA records
-        for text documents and persists them as semantic records. 
+        for text documents and persists them as semantic records. Since
         the input routing and text handling live in sfs-adapters.
     </description>
 
@@ -31,6 +31,10 @@
         <dependency>
             <groupId>com.sfs</groupId>
             <artifactId>sfs-contracts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-security</artifactId>
         </dependency>
         <dependency>
             <groupId>com.sfs</groupId>

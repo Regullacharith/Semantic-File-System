@@ -280,7 +280,7 @@ class MilestoneTwoAcceptanceTest {
             String body = get("/api/v1/version").body();
 
             assertThat(body).contains("real subsystems");
-            assertThat(body).contains("development identities");
+            assertThat(body).contains("development bootstrap identities");
         }
 
         @Test

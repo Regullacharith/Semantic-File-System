@@ -1,15 +1,30 @@
 package com.sfs.engine.pipeline;
 
+import com.sfs.contracts.security.SecretSubmission;
+import com.sfs.contracts.security.SecretVault;
 import com.sfs.contracts.semantic.ProtectedReferenceView;
 import com.sfs.engine.core.SemanticContext;
-import com.sfs.engine.core.Digests;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class ProtectedValueAnalyzer implements Analyzer {
 
-    private final ProtectedValueDetector detector = new ProtectedValueDetector();
+    private final com.sfs.security.SensitiveDataDetector detector =
+            new com.sfs.security.SensitiveDataDetector();
+    private final com.sfs.security.SecurityPolicyEngine policyEngine =
+            com.sfs.security.SecurityPolicyEngine.v1();
+    private final SecretVault vault;
+
+    public ProtectedValueAnalyzer() {
+        this(null);
+    }
+
+    public ProtectedValueAnalyzer(SecretVault vault) {
+        this.vault = vault;
+    }
 
     @Override
     public String name() {
@@ -18,40 +33,26 @@ public final class ProtectedValueAnalyzer implements Analyzer {
 
     @Override
     public void perform(SemanticContext context, SemanticIntermediateRepresentation ir) {
-        List<ProtectedReferenceView> references = new ArrayList<>();
-        List<String> lines = ir.rawLines();
-        for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i);
-            if (!detector.isSensitiveLine(line)) {
+        Map<String, ProtectedReferenceView> references = new LinkedHashMap<>();
+        List<com.sfs.security.SensitiveValue> values =
+                detector.detect(context.content());
+        for (com.sfs.security.SensitiveValue value : values) {
+            com.sfs.security.PolicyDecision decision = policyEngine.decide(value);
+            if (references.containsKey(decision.referenceId())) {
                 continue;
             }
-            references.add(new ProtectedReferenceView(
-                    "sfs-ref-" + Digests.sha256Hex(line.strip()).substring(0, 12),
-                    sensitivityOf(line),
-                    detector.isCredentialAssignment(line)
-                            ? "credential assignment"
-                            : "contact address",
-                    "line " + (i + 1),
-                    true));
+            if (vault != null && decision.resolvable()
+                    && decision.handling() == com.sfs.contracts.security.HandlingPolicy.ENCRYPT) {
+                vault.store(new SecretSubmission(decision.referenceId(),
+                        context.objectId(), value.type(), value.exactValue()));
+            }
+            references.put(decision.referenceId(), new ProtectedReferenceView(
+                    decision.referenceId(),
+                    value.type(),
+                    value.semanticRole(),
+                    value.location(),
+                    decision.resolvable()));
         }
-        ir.setProtectedReferences(references);
+        ir.setProtectedReferences(List.copyOf(references.values()));
     }
-
-    private static ProtectedReferenceView.SensitiveType sensitivityOf(String line) {
-        String lower = line.toLowerCase(java.util.Locale.ROOT);
-        if (lower.contains("password") || lower.contains("passwd") || lower.contains("pwd")) {
-            return ProtectedReferenceView.SensitiveType.PASSWORD;
-        }
-        if (lower.matches(".*(api[_-]?key|apikey).*")) {
-            return ProtectedReferenceView.SensitiveType.API_KEY;
-        }
-        if (lower.contains("token")) {
-            return ProtectedReferenceView.SensitiveType.ACCESS_TOKEN;
-        }
-        if (ProtectedReferenceView.SensitiveType.EMAIL_ADDRESS != null && line.contains("@")) {
-            return ProtectedReferenceView.SensitiveType.EMAIL_ADDRESS;
-        }
-        return ProtectedReferenceView.SensitiveType.OTHER;
-    }
-
 }

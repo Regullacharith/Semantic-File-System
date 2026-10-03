@@ -9,7 +9,8 @@ import java.util.Map;
 
 public final class TextParsingAnalyzer implements Analyzer {
 
-    private final ProtectedValueDetector protectedValueDetector = new ProtectedValueDetector();
+    private final com.sfs.security.SensitiveDataDetector sensitiveDataDetector =
+            new com.sfs.security.SensitiveDataDetector();
 
     @Override
     public String name() {
@@ -19,7 +20,7 @@ public final class TextParsingAnalyzer implements Analyzer {
     @Override
     public void perform(SemanticContext context, SemanticIntermediateRepresentation ir) {
         List<String> extractableLines = ir.rawLines().stream()
-                .filter(line -> !protectedValueDetector.isSensitiveLine(line))
+                .filter(line -> !sensitiveDataDetector.isSensitiveLine(line))
                 .toList();
         String extractableText = String.join("\n", extractableLines);
         ir.setParagraphs(splitParagraphs(extractableText));

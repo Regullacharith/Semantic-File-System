@@ -22,6 +22,10 @@ public final class SemanticPipeline {
     }
 
     public static SemanticPipeline v1() {
+        return v1(null);
+    }
+
+    public static SemanticPipeline v1(com.sfs.contracts.security.SecretVault vault) {
         return new SemanticPipeline(
                 List.of(
                         new TextParsingAnalyzer(),
@@ -33,7 +37,7 @@ public final class SemanticPipeline {
                         new FactAnalyzer(),
                         new RelationshipAnalyzer(),
                         new EmbeddingAnalyzer(),
-                        new ProtectedValueAnalyzer(),
+                        new ProtectedValueAnalyzer(vault),
                         new DnaBuilderAnalyzer()),
                 new DnaValidator());
     }
