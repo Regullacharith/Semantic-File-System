@@ -203,10 +203,70 @@ public class EngineWiringConfiguration {
                                          AnalysisCache analysisCache,
                                          AnalysisLevelPolicy analysisLevelPolicy,
                                          AnalysisCompletionListener lifecycleCompletionListener,
-                                         Clock sfsClock) {
+                                         Clock sfsClock,
+                                         com.sfs.contracts.security.SecretVault secretVault) {
         return new SemanticEngine(analysisInputProvider, adapterResolver,
                 semanticRecordStore, analysisCache,
-                analysisLevelPolicy, lifecycleCompletionListener, sfsClock);
+                analysisLevelPolicy, lifecycleCompletionListener, sfsClock,
+                secretVault);
+    }
+
+    @Bean
+    public com.sfs.security.SecurityAuditLog securityAuditLog() {
+        return new com.sfs.security.SecurityAuditLog();
+    }
+
+    @Bean
+    public com.sfs.security.SecurityPolicyEngine securityPolicyEngine() {
+        return com.sfs.security.SecurityPolicyEngine.v1();
+    }
+
+    @Bean
+    public com.sfs.security.KeyManager keyManager(
+            @org.springframework.beans.factory.annotation.Value(
+                    "${sfs.security.keys-dir:data/sfs-keys}") java.nio.file.Path keysDir) {
+        return new com.sfs.security.FileKeyManager(keysDir);
+    }
+
+    @Bean
+    public com.sfs.contracts.security.SecretVault secretVault(
+            @org.springframework.beans.factory.annotation.Value(
+                    "${sfs.security.secure-dir:data/sfs-secure}") java.nio.file.Path secureDir,
+            com.sfs.security.KeyManager keyManager) {
+        return new com.sfs.security.FileEncryptedSecureStore(secureDir, keyManager);
+    }
+
+    @Bean
+    public com.sfs.security.SecretResolutionService secretResolutionService(
+            com.sfs.security.FileEncryptedSecureStore secureStore,
+            com.sfs.contracts.security.AuthorizationService authorizationService,
+            com.sfs.security.SecurityPolicyEngine securityPolicyEngine,
+            com.sfs.security.SecurityAuditLog securityAuditLog) {
+        return new com.sfs.security.SecretResolutionService(secureStore,
+                authorizationService, securityPolicyEngine, securityAuditLog);
+    }
+
+    @Bean
+    public com.sfs.contracts.security.AuthenticationService authenticationService(
+            com.sfs.security.SecurityAuditLog securityAuditLog) {
+        return new com.sfs.security.IdentityAuthenticationService(securityAuditLog);
+    }
+
+    @Bean
+    public com.sfs.contracts.security.AuthorizationService authorizationService(
+            com.sfs.security.SecurityAuditLog securityAuditLog) {
+        return new com.sfs.security.PolicyAuthorizationService(securityAuditLog);
+    }
+
+    @Bean
+    public com.sfs.contracts.security.SecuritySettingsService securitySettingsService(
+            com.sfs.security.SecurityPolicyEngine securityPolicyEngine,
+            com.sfs.security.SecurityAuditLog securityAuditLog) {
+        return new com.sfs.security.PolicySecuritySettingsService(securityPolicyEngine,
+                securityAuditLog,
+                "AES-256-GCM master key held under data/sfs-keys, separate from the "
+                        + "ciphertext stored under data/sfs-secure; the key never "
+                        + "lives with the ciphertext it protects.");
     }
 
     @Bean

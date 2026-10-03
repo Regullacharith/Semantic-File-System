@@ -12,7 +12,9 @@ public enum Capability {
 
     MEMORIZE("Memorize (commit semantic memory)"),
 
-    PURGE_RAW("Purge raw data (permanent)");
+    PURGE_RAW("Purge raw data (permanent)"),
+
+    RESOLVE_SECRET("Resolve protected references");
 
     private final String label;
 

@@ -42,13 +42,19 @@ public final class DnaViewMapper {
                                 sensitiveType(reference.sensitiveType()),
                                 reference.semanticRole(),
                                 reference.location(),
-                                true))
+                                resolvable(sensitiveType(reference.sensitiveType()))))
                         .toList(),
                 dna.embedding().dimensions(),
                 new SemanticDnaView.FidelityProfileView(
                         dna.fidelity().extractionConfidence(),
                         dna.fidelity().structuralCompleteness(),
                         dna.fidelity().analyzerVersion()));
+    }
+
+private static boolean resolvable(
+            com.sfs.contracts.semantic.ProtectedReferenceView.SensitiveType type) {
+        return com.sfs.security.SecurityPolicyEngine.v1().policyFor(type)
+                .handling().isReversible();
     }
 
     private static ProtectedReferenceView.SensitiveType sensitiveType(String name) {

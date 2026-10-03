@@ -95,6 +95,19 @@ class MilestoneFourAcceptanceTest {
         return send("GET", "/api/v1/files/" + objectId, READER, null).body();
     }
 
+    private String awaitEvent(String objectId, String eventType) throws Exception {
+        for (int i = 0; i < 300; i++) {
+            String body = send("GET", "/api/v1/files/" + objectId + "/events",
+                    READER, null).body();
+            if (body.contains(eventType)) {
+                return body;
+            }
+            Thread.sleep(10);
+        }
+        throw new AssertionError("object " + objectId + " never recorded "
+                + eventType);
+    }
+
     private void awaitStatus(String objectId, String expectedStatus) throws Exception {
         for (int i = 0; i < 300; i++) {
             if (statusOf(objectId).contains("\"status\":\"" + expectedStatus + "\"")) {
@@ -116,9 +129,8 @@ class MilestoneFourAcceptanceTest {
 
         awaitStatus(objectId, "ANALYZED");
 
-        HttpResponse<String> events =
-                send("GET", "/api/v1/files/" + objectId + "/events", READER, null);
-        assertThat(events.body())
+        String events = awaitEvent(objectId, "ANALYSIS_SUCCEEDED");
+        assertThat(events)
                 .contains("ANALYSIS_STARTED")
                 .contains("ANALYSIS_SUCCEEDED");
     }

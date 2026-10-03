@@ -172,7 +172,7 @@ class MilestoneElevenAcceptanceTest {
 
         assertThat(version.statusCode()).isEqualTo(200);
         assertThat(version.body())
-                .contains("\"milestone\":\"M12")
+                .contains("\"milestone\":\"M13")
                 .contains("sfs-reconstruction-engine/0.1")
                 .contains("sfs-reconstruction/deterministic-baseline/0.1")
                 .contains("reconstruction-engine")

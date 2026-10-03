@@ -174,7 +174,7 @@ class MilestoneTwelveAcceptanceTest {
 
         assertThat(version.statusCode()).isEqualTo(200);
         assertThat(version.body())
-                .contains("\"milestone\":\"M12")
+                .contains("\"milestone\":\"M13")
                 .contains("sfs-evaluation/0.1")
                 .contains("evaluation-fidelity")
                 .contains("criticalFactChecks")

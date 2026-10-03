@@ -27,7 +27,7 @@ public final class SemanticEngine implements AutoCloseable {
     private final AnalysisLevelPolicy levelPolicy;
     private final AnalysisCompletionListener completionListener;
     private final Clock clock;
-    private final SemanticPipeline pipeline = SemanticPipeline.v1();
+    private final SemanticPipeline pipeline;
     private final AnalysisJobRegistry jobRegistry = new AnalysisJobRegistry();
     private final ExecutorService worker;
 
@@ -38,6 +38,18 @@ public final class SemanticEngine implements AutoCloseable {
                           AnalysisLevelPolicy levelPolicy,
                           AnalysisCompletionListener completionListener,
                           Clock clock) {
+        this(inputProvider, adapterResolver, recordStore, cache, levelPolicy,
+                completionListener, clock, null);
+    }
+
+    public SemanticEngine(AnalysisInputProvider inputProvider,
+                          AdapterResolver adapterResolver,
+                          InMemorySemanticRecordStore recordStore,
+                          AnalysisCache cache,
+                          AnalysisLevelPolicy levelPolicy,
+                          AnalysisCompletionListener completionListener,
+                          Clock clock,
+                          com.sfs.contracts.security.SecretVault secretVault) {
         this.inputProvider = Objects.requireNonNull(inputProvider, "inputProvider must not be null");
         this.adapterResolver = Objects.requireNonNull(adapterResolver, "adapterResolver must not be null");
         this.recordStore = Objects.requireNonNull(recordStore, "recordStore must not be null");
@@ -47,6 +59,7 @@ public final class SemanticEngine implements AutoCloseable {
                 ? new AnalysisCompletionListener() { }
                 : completionListener;
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.pipeline = SemanticPipeline.v1(secretVault);
         this.worker = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "semantic-engine-worker");
             thread.setDaemon(true);

@@ -11,16 +11,18 @@
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>sfs-engine</artifactId>
+    <artifactId>sfs-security</artifactId>
     <packaging>jar</packaging>
 
-    <name>SFS Engine</name>
+    <name>SFS Security</name>
     <description>
-        Semantic Engine subsystem : orchestrator, adapter-routed
-        input, deterministic semantic pipeline, change detection cache,
-        background worker and analysis levels. Produces Semantic DNA records
-        for text documents and persists them as semantic records. Since
-        the input routing and text handling live in sfs-adapters.
+        Security and Privacy System subsystem : sensitive-data
+        detection, the policy engine, protected references, the encrypted
+        secure store with structurally separated key management, authorization
+        for secret resolution, the secret-safe analysis guard, the password
+        policy and the security audit log. Exact sensitive values are separated
+        from semantic understanding: they never enter unrestricted DNA, vector
+        indexes or logs, and they resolve only under authorization.
     </description>
 
     <dependencies>
@@ -31,14 +33,6 @@
         <dependency>
             <groupId>com.sfs</groupId>
             <artifactId>sfs-contracts</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.sfs</groupId>
-            <artifactId>sfs-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.sfs</groupId>
-            <artifactId>sfs-adapters</artifactId>
         </dependency>
     </dependencies>
 
