@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfs</groupId>
+        <artifactId>sfs-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sfs-evaluation</artifactId>
+    <packaging>jar</packaging>
+
+    <name>SFS Evaluation</name>
+    <description>
+        Evaluation and Fidelity System subsystem : the semantic,
+        structural, factual, entity, relationship and completeness evaluators,
+        the overall fidelity calculation with its critical-fact gate, confidence
+        calibration, the regression benchmark with gold annotations and the
+        improvement advisor. Evaluation compares the original text with the
+        reconstructed artifact and the Semantic DNA material, so fidelity is
+        measured rather than asserted, and storage cost is always reported
+        beside it.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-contracts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-lifecycle</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>sfs-reconstruction-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
