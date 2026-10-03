@@ -22,6 +22,12 @@ public class SfsErrorController implements ErrorController {
 
     private static final Logger LOG = LoggerFactory.getLogger(SfsErrorController.class);
 
+    private final com.sfs.core.observe.ObservabilityRegistry observabilityRegistry;
+
+    public SfsErrorController(com.sfs.core.observe.ObservabilityRegistry observabilityRegistry) {
+        this.observabilityRegistry = observabilityRegistry;
+    }
+
     private static final String VIEW_ERROR = "error";
     private static final String ATTR_PAGE = "page";
     private static final String ATTR_ERROR = "error";
@@ -45,6 +51,15 @@ public class SfsErrorController implements ErrorController {
         } else {
             LOG.warn("Request refused with status {} for path {}", status, path);
         }
+        observabilityRegistry.record(new com.sfs.core.observe.StructuredEvent(
+                java.time.Instant.now(),
+                error.isServerError() ? "ERROR" : "WARN",
+                "request.failed",
+                org.slf4j.MDC.get(com.sfs.ui.config.TraceIdFilter.MDC_KEY),
+                null,
+                "FAILED",
+                null,
+                com.sfs.ui.config.TraceIdFilter.requestShape(request)));
 
         model.addAttribute(ATTR_PAGE, PageViewModel.of(error.title(), NavigationItem.HOME));
         model.addAttribute(ATTR_ERROR, error);
@@ -73,7 +88,8 @@ public class SfsErrorController implements ErrorController {
 
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(ApiErrorResponse.of(code, message, path));
+                .body(ApiErrorResponse.of(code, message,
+                        com.sfs.ui.config.TraceIdFilter.redactPath(path)));
     }
 
     private int resolveStatus(HttpServletRequest request) {
