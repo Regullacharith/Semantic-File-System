@@ -3,30 +3,27 @@ package com.sfs.ui.view;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * The navigation destinations of the SFS user interface.
- */
 public enum NavigationItem {
 
-    /** Dashboard / landing view. */
+    /** Dashboard / landing view.*/
     HOME("Dashboard", "/", "Overview of the Semantic File System", true),
 
-    /** File import, analyze and delete controls. */
+    /** File import, analyze and delete controls.*/
     FILES("Files", "/files", "Import, analyze and delete files", true),
 
-    /** Semantic Search view. */
+    /** Semantic Search view.*/
     SEARCH("Search", "/search", "Find semantic records by meaning", true),
 
-    /** Object / Semantic DNA inspection view. */
+    /** Object / Semantic DNA inspection view.*/
     OBJECTS("Objects", "/objects", "Inspect Object IDs and Semantic DNA", true),
 
-    /** Single-click reconstruction flow. */
+    /** Single-click reconstruction flow.*/
     RECONSTRUCTION("Reconstruction", "/reconstruction", "Reconstruct artifacts from semantic memory", true),
 
     /** Evaluation / fidelity view.*/
     EVALUATION("Evaluation", "/evaluation", "Semantic, structural and factual fidelity reports", true),
 
-    /** Security and policy settings. */
+    /** Security and policy settings.*/
     SETTINGS("Settings", "/settings", "Security and privacy policy configuration", true);
 
     private final String label;

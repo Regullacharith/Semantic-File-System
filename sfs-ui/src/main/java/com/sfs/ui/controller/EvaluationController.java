@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.List;
 
-/**
- * Evaluation and fidelity view.
- */
 @Controller
 public class EvaluationController {
 

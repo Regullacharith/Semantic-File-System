@@ -21,9 +21,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.nio.charset.StandardCharsets;
 
-/**
- * get reconstruction flow.
- */
 @Controller
 public class ReconstructionController {
 

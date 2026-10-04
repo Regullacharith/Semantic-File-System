@@ -12,13 +12,6 @@ public class HomeController {
     private static final String VIEW_HOME = "home";
     private static final String MODEL_ATTRIBUTE_PAGE = "page";
 
-    /**
-     * Renders the dashboard.
-     *
-     * @param model Spring MVC model populated with the page view model
-     * @return the logical view name resolved to {@code templates/home.html}
-     */
-    
     @GetMapping("/")
     public String home(Model model) {
         model.addAttribute(

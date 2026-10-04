@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Object and Semantic DNA inspection.
- */
 @Controller
 public class ObjectController {
 

@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-/**
- * Semantic search view.
- */
 @Controller
 public class SearchController {
 
@@ -42,7 +39,6 @@ public class SearchController {
         model.addAttribute(ATTR_PAGE, PageViewModel.of("Search", NavigationItem.SEARCH));
         model.addAttribute(ATTR_QUERY, queryText == null ? "" : queryText);
 
-        // First visit: 
         if (queryText == null || queryText.isBlank()) {
             model.addAttribute(ATTR_SEARCHED, false);
             model.addAttribute(ATTR_RESULTS, List.of());
@@ -55,8 +51,6 @@ public class SearchController {
         try {
             query = SearchQuery.of(queryText);
         } catch (IllegalArgumentException e) {
-            // Rejected input produces an explicit message rather than an empty result set,
-            // so the user is never left unsure whether the search ran.
             model.addAttribute(ATTR_ERROR, "Query rejected: " + e.getMessage());
             model.addAttribute(ATTR_RESULTS, List.of());
             return VIEW_SEARCH;

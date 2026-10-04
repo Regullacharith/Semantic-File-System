@@ -56,6 +56,21 @@ class LifecycleAuditApiTest {
                 HttpResponse.BodyHandlers.ofString());
     }
 
+    private String awaitEvent(String objectId, String eventType) throws Exception {
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline) {
+            HttpResponse<String> response =
+                    send("GET", "/api/v1/files/" + objectId + "/events", OPERATOR, null);
+            if (response.statusCode() == 200
+                    && response.body().contains(eventType)) {
+                return response.body();
+            }
+            Thread.sleep(20);
+        }
+        throw new AssertionError("object " + objectId + " never recorded "
+                + eventType);
+    }
+
     private String importedObject() throws Exception {
         String importBody = "{\"fileName\":\"audited.txt\",\"content\":\"Audit trail "
                 + "integration test.\",\"contentType\":\"text/plain\"}";
@@ -109,11 +124,9 @@ class LifecycleAuditApiTest {
             awaitStatus(objectId, "ANALYZED");
             send("POST", "/api/v1/files/" + objectId + "/memorize", OPERATOR, null);
 
-            HttpResponse<String> response =
-                    send("GET", "/api/v1/files/" + objectId + "/events", OPERATOR, null);
+            String body = awaitEvent(objectId, "MEMORY_COMMITTED");
 
-            assertThat(response.statusCode()).isEqualTo(200);
-            assertThat(response.body())
+            assertThat(body)
                     .contains("REGISTRATION_RECORDED")
                     .contains("ANALYSIS_STARTED")
                     .contains("ANALYSIS_SUCCEEDED")

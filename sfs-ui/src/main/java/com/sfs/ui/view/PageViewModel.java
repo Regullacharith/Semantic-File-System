@@ -8,9 +8,6 @@ public record PageViewModel(
         NavigationItem activeItem,
         List<NavigationItem> navigation) {
 
-    /**
-     * Canonical constructor.
-     */
     public PageViewModel {
         Objects.requireNonNull(title, "title must not be null");
         Objects.requireNonNull(activeItem, "activeItem must not be null");

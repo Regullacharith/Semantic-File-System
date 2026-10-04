@@ -134,13 +134,7 @@ public class ApiExceptionHandler {
     }
 
     private String redactedPath(HttpServletRequest request) {
-        String path = request.getRequestURI();
-
-        if (path != null && path.endsWith("/search")) {
-            return path;
-        }
-
-        return path;
+        return com.sfs.ui.config.TraceIdFilter.redactPath(request.getRequestURI());
     }
 
     private String safeMessage(IllegalArgumentException e) {
