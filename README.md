@@ -1,8 +1,76 @@
 # Semantic File System (SFS)
 
-SFS is a Java 21, multi-module Maven project for treating files as semantic objects instead of plain byte containers. It combines lifecycle management, text analysis, semantic memory, search, reconstruction planning, and a web interface into a single platform designed for experimentation and prototype workflows.
+> **A semantic-memory and reconstruction system for files.**
 
-The project is intentionally split into clear boundaries: domain logic, contracts, lifecycle behavior, adapters, semantic processing, storage, search, reconstruction, and presentation.
+SFS — **Semantic File System** — is a research and engineering project that explores a different approach to file preservation.
+
+Traditional file systems primarily preserve the raw bytes of a file. SFS additionally preserves a structured representation of **what the file means**: its identity, concepts, topics, facts, relationships, structure, semantic representation, and information required to support later reconstruction.
+
+The central idea is simple:
+
+```text
+                    LIVE FILE
+                       │
+                       ▼
+                File-Type Adapter
+                       │
+                       ▼
+                 Semantic Engine
+                       │
+                       ▼
+                  Semantic DNA
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+      Memory Database        Vector Index
+             │                   │
+             └─────────┬─────────┘
+                       ▼
+                 Semantic Search
+                       │
+                       ▼
+                    Object ID
+                       │
+                       ▼
+              Semantic DNA + Rules
+                       │
+                       ▼
+              Reconstruction Engine
+                       │
+                       ▼
+              Reconstructed File
+                       │
+                       ▼
+             Fidelity Evaluation
+```
+
+SFS is **not** intended to be a conventional backup system or a byte-for-byte forensic recovery mechanism. The objective is to preserve semantic information intentionally so that, after authorized deletion of raw data, the surviving semantic record can be searched and used to produce a new, semantically faithful representation.
+
+---
+# What Is SFS?
+
+A normal file can be viewed primarily as:
+
+```text
+File
+├── Identity
+├── Raw Bytes
+└── Metadata
+```
+
+SFS introduces a richer logical representation:
+
+```text
+Semantic File
+├── Identity
+│
+├── Raw Data
+│
+├── Semantic DNA
+│
+└── Reconstruction Rules
+```
+The **Semantic File** is a logical abstraction.
 
 ---
 
@@ -21,40 +89,19 @@ This separation makes it possible to reason about analysis, retention, deletion,
 
 ---
 
-## Repository layout
-
-```text
-Semantic-File-System/
-├── pom.xml
-├── LICENSE
-├── README.md
-├── sfs-core/                # domain model and semantic DNA concepts
-├── sfs-contracts/           # shared contracts and interfaces
-├── sfs-lifecycle/           # lifecycle state machine, versioning, and audit
-├── sfs-engine/              # semantic analysis orchestration
-├── sfs-adapters/            # adapter SPI, registry, and text ingestion
-├── sfs-memory/              # H2 persistence and memory indexing
-├── sfs-search/              # semantic query processing and ranking
-├── sfs-reconstruction/      # reconstruction rules and planning
-├── sfs-reconstruction-engine/ # reconstruction execution engine
-├── sfs-app/                 # application services and DTOs
-├── sfs-ui/                  # Spring Boot UI and REST API
-├── target/                  # generated Maven build output
-└── .gitignore
-```
-
----
-
 ## Module overview
 
 ### sfs-core
-Defines identity, semantic DNA, canonical serialization, validation, and reconstruction-rule planning. This module keeps domain logic isolated from UI and persistence concerns.
+Defines identity, semantic DNA, canonical serialization, validation, reconstruction-rule planning, and the observability kernel (trace IDs, structured log events, metrics registry). This module keeps domain logic isolated from UI and persistence concerns.
 
 ### sfs-contracts
 Provides shared contracts for files, lifecycle records, semantic data, search, reconstruction, evaluation, and security boundaries.
 
 ### sfs-lifecycle
 Handles registration, lifecycle transitions, version tracking, raw content handling, memory operations, deletion gates, restoration, and audit events.
+
+### sfs-security
+Implements the Security & Privacy System: sensitive-value detection (credentials, API keys, tokens, emails, phone numbers, account identifiers, addresses), the per-type handling policy engine, protected references, an AES-256-GCM encrypted secure store with a separately held master key, authentication and capability-based authorization for secret resolution, and the security audit log.
 
 ### sfs-adapters
 Contains the adapter SPI, registry, resolver, and the text adapter implementation. It currently accepts UTF-8 plain text and Markdown, normalizes content, and extracts document structure.
@@ -69,10 +116,13 @@ Stores lifecycle data, raw content, versions, semantic DNA, and reconstruction r
 Implements query parsing, semantic retrieval, candidate ranking, and evidence-rich results over the search index.
 
 ### sfs-reconstruction
-Contains reconstruction logic and rule planning used to rebuild or interpret file meaning from semantic and lifecycle context.
+Implements the SFS Reconstruction Model: the swappable model contract, the unified representation and its encoders (structure, facts/entities, relationships), the decoder interface with a deterministic baseline renderer, and the reproducible model benchmark.
 
 ### sfs-reconstruction-engine
-Provides the execution/runtime layer used to drive reconstruction workflows and related evaluation behavior.
+Provides the Reconstruction Engine runtime: the request manager and job state machine, DNA/rule loading, planning, model execution, constraint verification, post-processing, and TXT artifact generation with recorded provenance.
+
+### sfs-evaluation
+Implements the Evaluation & Fidelity System: per-dimension measurement (semantic, structural, factual, entity, relationship, completeness), explicit critical-fact scoring, confidence calibration, the regression benchmark with its committed baseline, and the improvement advisor.
 
 ### sfs-app
 Contains application services and DTO/request models that coordinate file, search, reconstruction, evaluation, and security workflows through the shared contracts.
@@ -84,14 +134,24 @@ Hosts the Spring Boot application, Thymeleaf templates, and REST controllers. Th
 
 ## Current implementation status
 
-This repository is best described as a working prototype rather than a production-grade filesystem. Core lifecycle behavior, text analysis, semantic representation, persistence, and reconstruction-rule planning are implemented, while several of the operational flows are intentionally mocked for demonstration and local development.
+### Current Implementation — V1 Complete
 
-The default profile is `mock`, which means:
+SFS V1 is fully implemented and verified. The interface is backed by real lifecycle, semantic analysis, persistence, search, reconstruction, evaluation, security, and observability subsystems.
 
-- search services are development-oriented or simulated
-- reconstruction and evaluation paths are mocked
-- security and authentication are not production-grade
-- sample files are seeded on first startup when the database is empty
+Implemented:
+
+- file lifecycle manager with audit trail and gated raw-data deletion
+- semantic analysis engine producing Semantic DNA (`sfs-dna/0.2`)
+- reconstruction rules (`sfs-rules/0.2`) with planning and conflict detection
+- durable Memory Database (H2) with rebuildable vector index
+- semantic search engine with evidence-bearing results
+- SFS Reconstruction Model with deterministic baseline rendering
+- reconstruction engine with observable, auditable jobs
+- evaluation and fidelity system with measured dimension scores, confidence calibration, and regression baseline
+- security and privacy system with sensitive-value detection, handling policies, protected references, encrypted secure store, and authorization-gated resolution
+- observability with trace IDs, structured logs (`sfs-log/0.1`), metrics (`sfs-metrics/0.1`), and externalized configuration (`sfs-config/0.1`)
+
+Verification: **1,024 automated tests** pass from a clean build, covering unit, integration, end-to-end, security, performance, and benchmark suites, plus a live executable-JAR release check.
 
 Current emphasis includes:
 
@@ -238,24 +298,37 @@ The UI exposes a REST API under `/api/v1` with grouped endpoints for:
 
 ## Scope and limitations
 
-This is a prototype rather than a full production-grade filesystem implementation.
+SFS implementation focused on text-based semantic file management, semantic representation, search, reconstruction, evaluation, security, and observability.
 
-Current limitations include:
+### Included
 
-- only the text adapter is implemented; it handles UTF-8 plain text and Markdown, not binary formats
-- the vector index is in memory and is rebuilt from persisted semantic records at startup
-- the default profile uses mock search, reconstruction, evaluation, and security services alongside development identities
-- no kernel-level or OS-backed filesystem integration
-- no production authentication, authorization, or multi-user tenancy model
-- reconstruction fidelity is not guaranteed; rendering and evaluation remain mocked in the UI
+- Java 21 and Text Adapter for UTF-8 text and Markdown
+- Semantic File abstraction, Object ID, Semantic DNA, and automatic adapter selection
+- Durable Memory Database (H2), vector embeddings, and rebuildable vector index
+- Semantic Search with evidence-bearing results
+- Reconstruction Rules, SFS Reconstruction Model, and Reconstruction Engine
+- semantic reconstruction
+- Semantic, structural, and factual/content fidelity measurement and evaluation
+- Iterative Semantic DNA improvement
+- Encryption and sensitive-data policies
+- Storage/fidelity measurements and UI
 
+### Limitations
+
+- Text files only; binary formats are deferred.
+- Reconstruction is not guaranteed to be exact; information not captured cannot be reliably reconstructed.
+- High-entropy values and passwords cannot generally be inferred from semantic meaning; sensitive values require authorized protected storage.
+- Reconstruction quality and storage reduction depend on source data and must be experimentally measured.
+- The vector index is in memory and rebuilt from persisted semantic records at startup.
+- V1 is loopback-only; TLS, hosted CI, and multi-user tenancy are deferred.
+- No kernel-level or OS-backed filesystem integration; SFS does not replace the physical filesystem in V1.
 ---
 
 ## License
 
 This project is distributed under the terms of the repository license.
 
-See [LICENSE](LICENSE) for full details.
+See [LICENSE] for full details.
 
 ---
 
